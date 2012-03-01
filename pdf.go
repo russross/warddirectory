@@ -191,7 +191,7 @@ func main() {
 	doc.AddObject(fmt.Sprintf(obj_font, "/Courier"))
 	doc.AddStream(obj_page_stream, []byte(makepage1()))
 	doc.WriteTrailer(info, catalog)
-	doc.Dump()
+	//doc.Dump()
 	font, err := parseFontMetricsFile("/usr/share/texmf-texlive/fonts/afm/adobe/times/ptmr8a.afm")
 	if err != nil {
 		fmt.Println(err)
@@ -201,12 +201,12 @@ func main() {
 //	for key, val := range font.Glyphs {
 //		fmt.Printf("%s: %v\n", key, val)
 //	}
-	//box, err := font.MakeBox("Yes, find me a sandwich.")
+	box, err := font.MakeBox("Yes, find me a sandwich. ")
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	//fmt.Printf("%#v\n", box)
+	fmt.Printf("%#v\n", box)
 }
 
 func makepage1() string {

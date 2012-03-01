@@ -157,6 +157,7 @@ func (font *FontMetrics) MakeBox(text string) (box *Box, err error) {
 	width := 0
 	cmd := ""
 	pending := ""
+	simple := true
 	for i, glyph := range glyphs {
 		kern := 0
 		if i+1 < len(glyphs) {
@@ -167,9 +168,19 @@ func (font *FontMetrics) MakeBox(text string) (box *Box, err error) {
 		switch {
 		// simple glyphs
 		case glyph.Code < 0x80 && kern != 0:
-			pending += fmt.Sprintf("%c", glyph.Code)
+			switch glyph.Code {
+			case '(':
+				pending += "\\("
+			case ')':
+				pending += "\\)"
+			case '\\':
+				pending += "\\\\"
+			default:
+				pending += fmt.Sprintf("%c", glyph.Code)
+			}
 			cmd += fmt.Sprintf("(%s)%d", pending, -kern)
 			pending = ""
+			simple = false
 		case glyph.Code < 0x80:
 			pending += fmt.Sprintf("%c", glyph.Code)
 
@@ -177,24 +188,33 @@ func (font *FontMetrics) MakeBox(text string) (box *Box, err error) {
 		case pending != "" && kern != 0:
 			cmd += fmt.Sprintf("(%s)<%02x>%d", pending, glyph.Code, -kern)
 			pending = ""
+			simple = false
 		case pending != "":
 			cmd += fmt.Sprintf("(%s)<%02x>", pending, glyph.Code)
 			pending = ""
+			simple = false
 		case kern != 0:
 			cmd += fmt.Sprintf("<%02x>%d", glyph.Code, -kern)
+			simple = false
 		default:
 			cmd += fmt.Sprintf("<%02x>", glyph.Code)
+			simple = false
 		}
 	}
 	if pending != "" {
 		cmd += fmt.Sprintf("(%s)", pending)
+	}
+	if simple {
+		cmd = cmd + " Tj"
+	} else {
+		cmd = "[" + cmd + "] TJ"
 	}
 
 	box = &Box{
 		Font: font,
 		Original: text,
 		Width: width,
-		Command: "[" + cmd + "] TJ",
+		Command: cmd,
 	}
 	return
 }
