@@ -17,7 +17,7 @@ func (elt Object) Render(out io.Writer, indent string) {
 	fmt.Fprintln(out, "<<")
 	for key, val := range elt {
 		fmt.Fprintln(out, "/%s ", key)
-		val.Render(out, indent + "  ")
+		val.Render(out, indent+"  ")
 	}
 	fmt.Fprintln(out, "%s>>\n", indent)
 }
@@ -29,7 +29,7 @@ func (elt *Str) Render(out io.Writer, indent string) {
 }
 
 type Ref struct {
-	Count int
+	Count  int
 	Actual Value
 }
 
@@ -112,16 +112,32 @@ startxref
 %%EOF
 `
 
+const (
+	PageWidth       = 8.5
+	PageHeight      = 11.0
+	TopMargin       = .75
+	BottomMargin    = .75
+	LeftMargin      = .75
+	RightMargin     = .75
+	HeaderHeight    = .25
+	Columns         = 2
+	ColumnGap       = .5
+	ColumnWidth     = (PageWidth - LeftMargin - RightMargin - ColumnGap*(Columns-1)) / Columns
+	ColumnHeight    = PageHeight - TopMargin - BottomMargin - HeaderHeight
+	ColumnCount     = Columns * 2
+	MaximumFontSize = 16.0
+)
+
 type Offset uint
 
 type Document struct {
-	out *bytes.Buffer
-	Xref []Offset
+	out     *bytes.Buffer
+	Xref    []Offset
 	Trailer Offset
 }
 
 func New() *Document {
-	elt := &Document{ out: new(bytes.Buffer) }
+	elt := &Document{out: new(bytes.Buffer)}
 	fmt.Fprint(elt.out, "%PDF-1.4\n%«»\n")
 	return elt
 }
@@ -198,9 +214,9 @@ func main() {
 		return
 	}
 	fmt.Printf("Font: %s\n", font.Name)
-//	for key, val := range font.Glyphs {
-//		fmt.Printf("%s: %v\n", key, val)
-//	}
+	//	for key, val := range font.Glyphs {
+	//		fmt.Printf("%s: %v\n", key, val)
+	//	}
 	box, err := font.MakeBox("Yes, find me a sandwich. ")
 	if err != nil {
 		fmt.Println(err)

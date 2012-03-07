@@ -4,37 +4,45 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"strings"
 )
 
+// The minimum allowed space size as a fraction of the normal size
+const MinSpaceSize = .75
+
+// How much worse is it to squish spaces than to pad the line with spaces?
+const SquishedPenalty = 5.0
+
 type GlyphMetrics struct {
-	Code int
-	Width int
-	Name string
-	BBoxLeft int
+	Code       int
+	Width      int
+	Name       string
+	BBoxLeft   int
 	BBoxBottom int
-	BBoxRight int
-	BBoxTop int
-	Ligatures map[string]string
-	Kerning map[string]int
+	BBoxRight  int
+	BBoxTop    int
+	Ligatures  map[string]string
+	Kerning    map[string]int
 }
 
 type FontMetrics struct {
-	Name string
+	Name   string
 	Glyphs map[string]*GlyphMetrics
 	Lookup map[int]string
 }
 
 type Box struct {
-	Font *FontMetrics
+	Font     *FontMetrics
 	Original string
-	Width int
-	Command string
+	Width    int
+	Command  string
+	Sticky   bool
 }
 
 func (font *FontMetrics) parseGlyph(in string) error {
 	// sample: C 102 ; WX 333 ; N f ; B 20 0 383 683 ; L i fi ; L l fl ;
-	glyph := &GlyphMetrics{ Ligatures: make(map[string]string), Kerning: make(map[string]int) }
+	glyph := &GlyphMetrics{Ligatures: make(map[string]string), Kerning: make(map[string]int)}
 
 	for _, elt := range strings.Split(in, ";") {
 		elt = strings.TrimSpace(elt)
@@ -211,10 +219,85 @@ func (font *FontMetrics) MakeBox(text string) (box *Box, err error) {
 	}
 
 	box = &Box{
-		Font: font,
+		Font:     font,
 		Original: text,
-		Width: width,
-		Command: cmd,
+		Width:    width,
+		Command:  cmd,
 	}
 	return
+}
+
+type breakpoint struct {
+	cost     float64 // best total cost of breaking this chunk
+	nextline int     // start of next line
+}
+
+func BreakParagraph(words []*Box, firstlinewidth, linewidth, spacesize float64) (startofeachline []int) {
+	// the matrix of costs:
+	//   matrix[from][to] = cost of breaking words[from:to+1]
+	dim := len(words)
+	backing := make([]breakpoint, dim*dim)
+	matrix := make([][]breakpoint, dim)
+	for i := 0; i < dim; i++ {
+		matrix[i] = backing[i*dim : (i+1)*dim]
+	}
+
+	for from := dim - 1; from >= 0; from-- {
+		for to := dim - 1; to >= from; to-- {
+			// best = min(cost(from, i) + cost(i+1, to))
+			matrix[from][to] = breakpoint{math.Inf(1), -1}
+			for i := from; i <= to; i++ {
+				width := linewidth
+				if from == 0 {
+					width = firstlinewidth
+				}
+				cost := LineCost(width, spacesize, words[from:i+1])
+				if i+1 <= to {
+					cost += matrix[i+1][to].cost
+				}
+				if cost < matrix[from][to].cost {
+					matrix[from][to] = breakpoint{cost, i + 1}
+				}
+			}
+		}
+	}
+
+	if math.IsInf(matrix[0][dim-1].cost, 1) || len(words) == 0 {
+		return nil
+	}
+	startofeachline = []int{0}
+	for nextline := 0; nextline < dim; {
+		nextline := matrix[nextline][dim-1].nextline
+		startofeachline = append(startofeachline, nextline)
+	}
+	return
+}
+
+func LineCost(width, spacesize float64, words []*Box) (cost float64) {
+	// see if the line fits
+	for _, box := range words {
+		cost += float64(box.Width)
+	}
+	maxwidth := cost + float64(len(words)-1)*spacesize
+	minwidth := cost + float64(len(words)-1)*spacesize*MinSpaceSize
+
+	switch {
+	// too long
+	case minwidth > width:
+		return math.Inf(1)
+
+	// easy fit
+	case maxwidth <= width:
+		excess := (width - maxwidth) / spacesize
+		var penalty float64
+		if words[len(words)-1].Sticky {
+			penalty = width / spacesize // as bad as adding an extra line
+		}
+		return excess*excess + penalty
+
+	// squished fit
+	default:
+		return (maxwidth - width) / spacesize * SquishedPenalty
+	}
+	panic("Can't get here")
 }
