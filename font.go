@@ -265,9 +265,15 @@ func BreakParagraph(words []*Box, firstlinewidth, linewidth, spacesize float64) 
 	if math.IsInf(matrix[0][dim-1].cost, 1) || len(words) == 0 {
 		return nil
 	}
-	startofeachline = []int{0}
-	for nextline := 0; nextline < dim; {
-		nextline := matrix[nextline][dim-1].nextline
+	for _, row := range matrix {
+		for _, col := range row {
+			fmt.Printf("%5.1f %3d ", col.cost, col.nextline)
+		}
+		fmt.Println()
+	}
+
+	startofeachline = []int{}
+	for nextline := 0; nextline < dim; nextline = matrix[nextline][dim-1].nextline {
 		startofeachline = append(startofeachline, nextline)
 	}
 	return
@@ -291,7 +297,8 @@ func LineCost(width, spacesize float64, words []*Box) (cost float64) {
 		excess := (width - maxwidth) / spacesize
 		var penalty float64
 		if words[len(words)-1].Sticky {
-			penalty = width / spacesize // as bad as adding an extra line
+			// as bad as adding an extra line of spaces
+			penalty = (width / spacesize) * (width / spacesize)
 		}
 		return excess*excess + penalty
 

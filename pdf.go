@@ -208,6 +208,22 @@ func main() {
 	doc.AddStream(obj_page_stream, []byte(makepage1()))
 	doc.WriteTrailer(info, catalog)
 	//doc.Dump()
+
+	testPara()
+}
+
+func testPara() {
+	words := []*Box{
+		{Original: "aaa", Width: 3},
+		{Original: "bb", Width: 2},
+		{Original: "cc", Width: 2},
+		{Original: "ddddd", Width: 5},
+	}
+	lines := BreakParagraph(words, 6, 6, 1)
+	fmt.Println(lines)
+}
+
+func testFont() {
 	font, err := parseFontMetricsFile("/usr/share/texmf-texlive/fonts/afm/adobe/times/ptmr8a.afm")
 	if err != nil {
 		fmt.Println(err)
