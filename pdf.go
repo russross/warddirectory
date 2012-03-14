@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"time"
 )
 
 type Value interface {
@@ -113,20 +112,57 @@ startxref
 `
 
 const (
-	PageWidth       = 8.5
-	PageHeight      = 11.0
-	TopMargin       = .75
-	BottomMargin    = .75
-	LeftMargin      = .75
-	RightMargin     = .75
-	HeaderHeight    = .25
-	Columns         = 2
-	ColumnGap       = .5
-	ColumnWidth     = (PageWidth - LeftMargin - RightMargin - ColumnGap*(Columns-1)) / Columns
-	ColumnHeight    = PageHeight - TopMargin - BottomMargin - HeaderHeight
-	ColumnCount     = Columns * 2
-	MaximumFontSize = 16.0
+	inch            = 72.0
+	MaximumFontSize = 18.0
 )
+
+type Directory struct {
+	PageWidth, PageHeight       float64
+	TopMargin, BottomMargin     float64
+	LeftMargin, RightMargin     float64
+	HeaderHeight                float64
+	ColumnsPerPage, ColumnCount int
+	ColumnGap                   float64
+	ColumnWidth, ColumnHeight   float64
+
+	Roman, Bold, Typewriter *FontMetrics
+
+	Title    string
+	Families []*Family
+	Entries  [][]*Box
+}
+
+func NewDirectory(title string, roman, bold, typewriter *FontMetrics) *Directory {
+	elt := &Directory{
+		PageWidth:      8.5 * inch,
+		PageHeight:     11.0 * inch,
+		TopMargin:      .75 * inch,
+		BottomMargin:   .75 * inch,
+		LeftMargin:     .75 * inch,
+		RightMargin:    .75 * inch,
+		HeaderHeight:   20.0,
+		ColumnsPerPage: 2,
+		ColumnGap:      .5 * inch,
+
+		Roman:      roman,
+		Bold:       bold,
+		Typewriter: typewriter,
+
+		Title: title,
+	}
+	elt.ColumnCount = elt.ColumnsPerPage * 2
+	elt.ColumnWidth = elt.PageWidth
+	elt.ColumnWidth -= elt.LeftMargin
+	elt.ColumnWidth -= elt.RightMargin
+	elt.ColumnWidth -= elt.ColumnGap * float64(elt.ColumnsPerPage-1)
+	elt.ColumnWidth /= float64(elt.ColumnsPerPage)
+	elt.ColumnHeight = elt.PageHeight
+	elt.ColumnHeight -= elt.TopMargin
+	elt.ColumnHeight -= elt.BottomMargin
+	elt.ColumnHeight -= elt.HeaderHeight
+
+	return elt
+}
 
 type Offset uint
 
@@ -136,7 +172,7 @@ type Document struct {
 	Trailer Offset
 }
 
-func New() *Document {
+func NewDocument() *Document {
 	elt := &Document{out: new(bytes.Buffer)}
 	fmt.Fprint(elt.out, "%PDF-1.4\n%«»\n")
 	return elt
@@ -178,90 +214,4 @@ func (elt *Document) WriteTrailer(info, catalog string) {
 
 func (elt *Document) Dump() {
 	fmt.Print(elt.out.String())
-}
-
-func main() {
-	doc := New()
-
-	timestamp := time.Now().Format("20060102150405-0700")
-	timestamp = "D:" + timestamp[:17] + "'" + timestamp[17:19] + "'" + timestamp[19:]
-	title := "Diamond Valley Second Ward"
-	author := "Russ Ross"
-	info := doc.AddObject(fmt.Sprintf(obj_info, title, author, timestamp, timestamp))
-	pages := doc.ForwardRef(1)
-	catalog := doc.AddObject(fmt.Sprintf(obj_catalog, pages))
-	page1 := doc.ForwardRef(1)
-	page2 := doc.ForwardRef(2)
-	fontResource := doc.ForwardRef(3)
-	page1Contents := doc.ForwardRef(7)
-	page2Contents := doc.ForwardRef(8)
-	doc.AddObject(fmt.Sprintf(obj_pages, page1, page2))
-	doc.AddObject(fmt.Sprintf(obj_page, pages, fontResource, page1Contents))
-	doc.AddObject(fmt.Sprintf(obj_page, pages, fontResource, page2Contents))
-	roman := doc.ForwardRef(1)
-	bold := doc.ForwardRef(2)
-	typewriter := doc.ForwardRef(3)
-	doc.AddObject(fmt.Sprintf(obj_fontresource, roman, bold, typewriter))
-	doc.AddObject(fmt.Sprintf(obj_font, "/Times-Roman"))
-	doc.AddObject(fmt.Sprintf(obj_font, "/Times-Bold"))
-	doc.AddObject(fmt.Sprintf(obj_font, "/Courier"))
-	doc.AddStream(obj_page_stream, []byte(makepage1()))
-	doc.WriteTrailer(info, catalog)
-	//doc.Dump()
-
-	testPara()
-}
-
-func testPara() {
-	words := []*Box{
-		{Original: "aaa", Width: 3},
-		{Original: "bb", Width: 2},
-		{Original: "cc", Width: 2},
-		{Original: "ddddd", Width: 5},
-	}
-	lines := BreakParagraph(words, 6, 6, 1)
-	fmt.Println(lines)
-}
-
-func testFont() {
-	font, err := parseFontMetricsFile("/usr/share/texmf-texlive/fonts/afm/adobe/times/ptmr8a.afm")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Printf("Font: %s\n", font.Name)
-	//	for key, val := range font.Glyphs {
-	//		fmt.Printf("%s: %v\n", key, val)
-	//	}
-	box, err := font.MakeBox("Yes, find me a sandwich. ")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Printf("%#v\n", box)
-}
-
-func makepage1() string {
-	return `1 0 0 1 36 727 Tm
-/FB 20 Tf
-(Ross) Tj
-/FR 20 Tf
-( Russ \(773-5952, ) Tj
-/FT 20 Tf
-(russ@russross.com) Tj
-/FR 20 Tf
-(\),) Tj
-1 0 0 1 52 707 Tm
-[(Nanc)15(y \(773-5953, )] TJ
-/FT 20 Tf
-(nancy@nancyross.com) Tj
-/FR 20 Tf
-(\), Rosie, Alex,) Tj
-1 0 0 1 52 687 Tm
-(1414 Agate Ct) Tj
-1 0 0 1 52 667 Tm
-[(Y)100(es, )<ae>(nd me a sandwich.)] TJ
-1 0 0 1 251.08 667 Tm
-([End])Tj
-`
 }

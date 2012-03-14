@@ -37,7 +37,8 @@ type Box struct {
 	Original string
 	Width    int
 	Command  string
-	Sticky   bool
+	JoinNext bool
+	Penalty  int
 }
 
 func (font *FontMetrics) parseGlyph(in string) error {
@@ -145,7 +146,7 @@ func (font *FontMetrics) MakeBox(text string) (box *Box, err error) {
 	for _, ch := range text {
 		name, present := font.Lookup[int(ch)]
 		if !present {
-			msg := fmt.Sprintf("MakeBox: Unknown character: [%c]", ch)
+			msg := fmt.Sprintf("MakeBox: Unknown character: [%c] with code %d", ch, int(ch))
 			return nil, errors.New(msg)
 		}
 		glyph := font.Glyphs[name]
@@ -251,7 +252,7 @@ func BreakParagraph(words []*Box, firstlinewidth, linewidth, spacesize float64) 
 				if from == 0 {
 					width = firstlinewidth
 				}
-				cost := LineCost(width, spacesize, words[from:i+1])
+				cost := LineCost(width, spacesize, words[from:i+1], i+1 == dim)
 				if i+1 <= to {
 					cost += matrix[i+1][to].cost
 				}
@@ -267,7 +268,7 @@ func BreakParagraph(words []*Box, firstlinewidth, linewidth, spacesize float64) 
 	}
 	for _, row := range matrix {
 		for _, col := range row {
-			fmt.Printf("%5.1f %3d ", col.cost, col.nextline)
+			fmt.Printf("%8.1f %3d ", col.cost, col.nextline)
 		}
 		fmt.Println()
 	}
@@ -279,13 +280,27 @@ func BreakParagraph(words []*Box, firstlinewidth, linewidth, spacesize float64) 
 	return
 }
 
-func LineCost(width, spacesize float64, words []*Box) (cost float64) {
-	// see if the line fits
-	for _, box := range words {
-		cost += float64(box.Width)
+func LineCost(width, spacesize float64, words []*Box, lastline bool) (cost float64) {
+	// no space after the end of this sequence of words?
+	if words[len(words)-1].JoinNext {
+		return math.Inf(1)
 	}
-	maxwidth := cost + float64(len(words)-1)*spacesize
-	minwidth := cost + float64(len(words)-1)*spacesize*MinSpaceSize
+
+	// see if the line fits
+	var spaces float64
+	for i, box := range words {
+		cost += float64(box.Width)
+		if !box.JoinNext && i+1 < len(words) {
+			spaces += 1.0
+		}
+	}
+	maxwidth := cost + spaces*spacesize
+	minwidth := cost + spaces*spacesize*MinSpaceSize
+
+	// if we prefer not to break here, then the penalty is the
+	// same as a completely blank line
+	penalty := width / spacesize
+	penalty = penalty * penalty * float64(words[len(words)-1].Penalty)
 
 	switch {
 	// too long
@@ -295,16 +310,18 @@ func LineCost(width, spacesize float64, words []*Box) (cost float64) {
 	// easy fit
 	case maxwidth <= width:
 		excess := (width - maxwidth) / spacesize
-		var penalty float64
-		if words[len(words)-1].Sticky {
-			// as bad as adding an extra line of spaces
-			penalty = (width / spacesize) * (width / spacesize)
+
+		// no penalty for trailing spaces on the last line
+		if lastline {
+			excess = 0.0
 		}
+
 		return excess*excess + penalty
 
 	// squished fit
 	default:
-		return (maxwidth - width) / spacesize * SquishedPenalty
+		squish := (maxwidth - width) / spacesize
+		return squish*SquishedPenalty + penalty
 	}
 	panic("Can't get here")
 }
