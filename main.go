@@ -40,10 +40,10 @@ func main() {
 	}
 
 	// format families
-	//	if err = dir.formatFamilies(); err != nil {
-	//		log.Fatal("formatting families: ", err)
-	//	}
-	//
+	if err = dir.formatFamilies(); err != nil {
+		log.Fatal("formatting families: ", err)
+	}
+
 	//	// find the font size
 	//	if err = dir.findFontSize(); err != nil {
 	//		log.Fatal("finding font size: ", err)

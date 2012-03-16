@@ -255,126 +255,169 @@ func (dir *Directory) parseFamilies(src io.Reader) error {
 	return nil
 }
 
-func (dir *Directory) formatFamilies() error {
+// space: -1 means no leading space 0 regular, 1+ penalty for line break
+func packBox(lst []*Box, elt string, space int, font *FontMetrics) (entry []*Box, err error) {
+	var box *Box
+	if len(lst) == 0 {
+		if box, err = font.MakeBox(elt); err != nil {
+			return nil, err
+		}
+		return []*Box{box}, nil
+	}
+
+	prev := lst[len(lst)-1]
+
+	switch {
+	// can we tack this on to the end of the previous box?
+	case space < 0 && prev.Font == font:
+		if box, err = font.MakeBox(prev.Original + elt); err != nil {
+			return nil, err
+		}
+		lst[len(lst)-1] = box
+		return lst, nil
+
+	// join this to the previous box, but with different fonts
+	case space < 0:
+		prev.JoinNext = true
+		if box, err = font.MakeBox(elt); err != nil {
+			return nil, err
+		}
+		return append(lst, box), nil
+
+	// make a new box
+	default:
+		if box, err = font.MakeBox(elt); err != nil {
+			return nil, err
+		}
+		prev.Penalty = space
+		return append(lst, box), nil
+	}
+
+	panic("Can't get here")
+}
+
+func (dir *Directory) formatFamilies() (err error) {
 	for _, family := range dir.Families {
 		var entry []*Box
 
 		// start with the surname in bold
-		surname, err := dir.Bold.MakeBox(family.Surname)
-		if err != nil {
-			return err
+		if entry, err = packBox(nil, family.Surname, 0, dir.Bold); err != nil {
+			return
 		}
-		entry = append(entry, surname)
 
 		// next the phone number (if present)
 		if family.Phone != "" {
-			phone, err := dir.Roman.MakeBox(family.Phone + ",")
-			if err != nil {
-				return err
+			if entry, err = packBox(entry, family.Phone+",", 0, dir.Roman); err != nil {
+				return
 			}
-			entry = append(entry, phone)
 		}
 
 		// next the email address (if present)
 		if family.Email != "" {
-			email, err := dir.Typewriter.MakeBox(family.Email)
-			if err != nil {
-				return err
+			if entry, err = packBox(entry, family.Email, 0, dir.Typewriter); err != nil {
+				return
 			}
-			email.JoinNext = true
-			entry = append(entry, email)
-
-			comma, err := dir.Roman.MakeBox(",")
-			if err != nil {
-				return err
+			if entry, err = packBox(entry, ",", -1, dir.Roman); err != nil {
+				return
 			}
-			entry = append(entry, comma)
 		}
 
 		// now the family members
 		for _, person := range family.People {
 			// split the person's name into discrete words
-			parts := strings.Fields(person.Name)
+			for i, word := range strings.Fields(person.Name) {
+				space := 0
 
-			for i, word := range parts {
-				box, err := dir.Roman.MakeBox(word)
-				if err != nil {
-					return err
-				}
-
-				switch {
 				// strongly discourage line breaks within a person's name
-				case i+1 < len(parts):
-					box.Penalty = 2
-
-				// discourage line breaks between a name and contact info
-				case person.Phone != "" || person.Email != "":
-					box.Penalty = 1
-
-				// no line break before trailing comma when there is no contact info
-				default:
-					box.JoinNext = true
+				if i > 0 {
+					space = 2
 				}
-				entry = append(entry, box)
+				if entry, err = packBox(entry, word, space, dir.Roman); err != nil {
+					return
+				}
 			}
 
-			// now take care of phone and email address
-			if person.Phone != "" || person.Email != "" {
-				open, err := dir.Roman.MakeBox("(")
-				if err != nil {
-					return err
+			// no contact details?  just end with a comma
+			if person.Phone == "" && person.Email == "" {
+				if entry, err = packBox(entry, ",", -1, dir.Roman); err != nil {
+					return
 				}
-				open.JoinNext = true
-				entry = append(entry, open)
+				continue
+			}
 
-				// phone
+			// phone and email address are in parentheses
+			if entry, err = packBox(entry, "(", 1, dir.Roman); err != nil {
+				return
+			}
+
+			// phone
+			if person.Phone != "" {
+				if entry, err = packBox(entry, person.Phone, -1, dir.Roman); err != nil {
+					return
+				}
+			}
+
+			// email
+			if person.Email != "" {
+				// discourage line breaks within a person's entry
+				space := 1
+
+				// following the phone number? join with a comma
 				if person.Phone != "" {
-					phone, err := dir.Roman.MakeBox(person.Phone)
-					if err != nil {
-						return err
+					if entry, err = packBox(entry, ",", -1, dir.Roman); err != nil {
+						return
 					}
-
-					// either a comma or a closing paren will follow
-					phone.JoinNext = true
-					entry = append(entry, phone)
-
-					// comma between phone and email?
-					if person.Email != "" {
-						comma, err := dir.Roman.MakeBox(",")
-						if err != nil {
-							return err
-						}
-						// discourage line breaks within a person's entry
-						comma.Penalty = 1
-						entry = append(entry, comma)
-					}
+				} else {
+					// join it to the open paren
+					space = -1
 				}
 
-				if person.Email != "" {
-					email, err := dir.Typewriter.MakeBox(person.Email)
-					if err != nil {
-						return err
-					}
-
-					// a closing paren will follow
-					email.JoinNext = true
-					entry = append(entry, email)
+				// the email address
+				if entry, err = packBox(entry, person.Email, space, dir.Typewriter); err != nil {
+					return
 				}
-
-				closep, err := dir.Roman.MakeBox(")")
-				if err != nil {
-					return err
-				}
-				closep.JoinNext = true
-				entry = append(entry, closep)
 			}
 
-			comma, err := dir.Roman.MakeBox(",")
-			if err != nil {
-				return err
+			// close paren and comma
+			if entry, err = packBox(entry, "),", -1, dir.Roman); err != nil {
+				return
 			}
-			entry = append(entry, comma)
 		}
+
+		// address comes next
+		// split the address into words
+		for i, word := range strings.Fields(family.Address) {
+			space := 0
+
+			// strongly discourage line breaks within an address
+			if i > 0 {
+				space = 2
+			}
+			if entry, err = packBox(entry, word, space, dir.Roman); err != nil {
+				return
+			}
+		}
+
+		// only show the city if it is not the default
+		if family.City != CITY && family.City != "" {
+			if entry, err = packBox(entry, ",", -1, dir.Roman); err != nil {
+				return
+			}
+			// split the city into words
+			for i, word := range strings.Fields(family.City) {
+				space := 0
+
+				// strongly discourage line breaks within a city
+				if i > 0 {
+					space = 2
+				}
+				if entry, err = packBox(entry, word, space, dir.Roman); err != nil {
+					return
+				}
+			}
+		}
+
+		dir.Entries = append(dir.Entries, entry)
 	}
 
 	return nil
