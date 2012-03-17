@@ -253,7 +253,7 @@ func (dir *Directory) parseFamilies(src io.Reader) error {
 func packBox(lst []*Box, elt string, space int, font *FontMetrics) (entry []*Box, err error) {
 	var box *Box
 	if len(lst) == 0 {
-		if box, err = font.MakeBox(elt); err != nil {
+		if box, err = font.MakeBox(elt, 1.0); err != nil {
 			return nil, err
 		}
 		return []*Box{box}, nil
@@ -264,7 +264,7 @@ func packBox(lst []*Box, elt string, space int, font *FontMetrics) (entry []*Box
 	switch {
 	// can we tack this on to the end of the previous box?
 	case space < 0 && prev.Font == font:
-		if box, err = font.MakeBox(prev.Original + elt); err != nil {
+		if box, err = font.MakeBox(prev.Original+elt, 1.0); err != nil {
 			return nil, err
 		}
 		lst[len(lst)-1] = box
@@ -273,14 +273,14 @@ func packBox(lst []*Box, elt string, space int, font *FontMetrics) (entry []*Box
 	// join this to the previous box, but with different fonts
 	case space < 0:
 		prev.JoinNext = true
-		if box, err = font.MakeBox(elt); err != nil {
+		if box, err = font.MakeBox(elt, 1.0); err != nil {
 			return nil, err
 		}
 		return append(lst, box), nil
 
 	// make a new box
 	default:
-		if box, err = font.MakeBox(elt); err != nil {
+		if box, err = font.MakeBox(elt, 1.0); err != nil {
 			return nil, err
 		}
 		prev.Penalty = space
@@ -295,8 +295,16 @@ func (dir *Directory) formatFamilies() (err error) {
 		var entry []*Box
 
 		// start with the surname in bold
-		if entry, err = packBox(nil, family.Surname, 0, dir.Bold); err != nil {
-			return
+		for i, word := range strings.Fields(family.Surname) {
+			space := 0
+
+			// strong discourage line breaks within a surname
+			if i > 0 {
+				space = 2
+			}
+			if entry, err = packBox(entry, word, space, dir.Bold); err != nil {
+				return
+			}
 		}
 
 		// next the phone number (if present)

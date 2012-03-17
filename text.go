@@ -36,7 +36,7 @@ type FontMetrics struct {
 type Box struct {
 	Font     *FontMetrics
 	Original string
-	Width    int
+	Width    float64
 	Command  string
 	JoinNext bool
 	Penalty  int
@@ -141,7 +141,7 @@ func parseFontMetricsFile(file string) (font *FontMetrics, err error) {
 	return
 }
 
-func (font *FontMetrics) MakeBox(text string) (box *Box, err error) {
+func (font *FontMetrics) MakeBox(text string, spacecompress float64) (box *Box, err error) {
 	// find the list of glyphs, merging ligatures when possible
 	var glyphs []*GlyphMetrics
 	for _, ch := range text {
@@ -164,16 +164,21 @@ func (font *FontMetrics) MakeBox(text string) (box *Box, err error) {
 	}
 
 	// now compute the total width, including kerning
-	width := 0
+	var width float64
 	cmd := ""
 	pending := ""
 	simple := true
 	for i, glyph := range glyphs {
-		kern := 0
+		var kern float64
 		if i+1 < len(glyphs) {
-			kern = glyph.Kerning[glyphs[i+1].Name]
+			kern = float64(glyph.Kerning[glyphs[i+1].Name])
 		}
-		width += glyph.Width + kern
+
+		// do we need to "kern" this space to squish it?
+		if spacecompress != 1.0 && glyph.Code == ' ' {
+			kern += float64(glyph.Width) - float64(glyph.Width)*spacecompress
+		}
+		width += float64(glyph.Width) + kern
 
 		switch {
 		// simple glyphs
@@ -189,7 +194,11 @@ func (font *FontMetrics) MakeBox(text string) (box *Box, err error) {
 				pending += fmt.Sprintf("%c", glyph.Code)
 			}
 			if kern != 0 {
-				cmd += fmt.Sprintf("(%s)%d", pending, -kern)
+				if float64(int(kern)) == kern {
+					cmd += fmt.Sprintf("(%s)%d", pending, -int(kern))
+				} else {
+					cmd += fmt.Sprintf("(%s)%.2f", pending, -kern)
+				}
 				pending = ""
 				simple = false
 			}
@@ -441,26 +450,26 @@ func (dir *Directory) simplyLine(boxes []*Box) (simple []*Box, err error) {
 
 		// simple merger
 		case box.JoinNext:
-			if boxes[i+1], err = box.Font.MakeBox(box.Original + next.Original); err != nil {
+			if boxes[i+1], err = box.Font.MakeBox(box.Original+next.Original, 1.0); err != nil {
 				return
 			}
 
 		// same font with a space between
 		case box.Font == next.Font:
-			if boxes[i+1], err = box.Font.MakeBox(box.Original + " " + next.Original); err != nil {
+			if boxes[i+1], err = box.Font.MakeBox(box.Original+" "+next.Original, 1.0); err != nil {
 				return
 			}
 
 		// roman followed by anything
 		case box.Font == dir.Roman:
-			if box, err = box.Font.MakeBox(box.Original + " "); err != nil {
+			if box, err = box.Font.MakeBox(box.Original+" ", 1.0); err != nil {
 				return
 			}
 			simple = append(simple, box)
 
 		// anything followed by roman
 		case next.Font == dir.Roman:
-			if next, err = next.Font.MakeBox(" " + next.Original); err != nil {
+			if next, err = next.Font.MakeBox(" "+next.Original, 1.0); err != nil {
 				return
 			}
 			boxes[i+1] = next
@@ -468,14 +477,14 @@ func (dir *Directory) simplyLine(boxes []*Box) (simple []*Box, err error) {
 
 		// bold followed by anything
 		case box.Font == dir.Bold:
-			if box, err = box.Font.MakeBox(box.Original + " "); err != nil {
+			if box, err = box.Font.MakeBox(box.Original+" ", 1.0); err != nil {
 				return
 			}
 			simple = append(simple, box)
 
 		// anything followed by bold
 		case next.Font == dir.Bold:
-			if next, err = next.Font.MakeBox(" " + next.Original); err != nil {
+			if next, err = next.Font.MakeBox(" "+next.Original, 1.0); err != nil {
 				return
 			}
 			boxes[i+1] = next
