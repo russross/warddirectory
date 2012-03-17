@@ -112,8 +112,9 @@ startxref
 `
 
 const (
-	inch            = 72.0
-	MaximumFontSize = 18.0
+	inch            float64 = 72.0
+	MinimumFontSize float64 = 4.0
+	MaximumFontSize float64 = 18.0
 )
 
 type Directory struct {
@@ -127,9 +128,12 @@ type Directory struct {
 
 	Roman, Bold, Typewriter *FontMetrics
 
-	Title    string
-	Families []*Family
-	Entries  [][]*Box
+	Title        string
+	Families     []*Family
+	Entries      [][]*Box
+	Linebreaks   [][]int
+	Columnbreaks []int
+	FontSize     float64
 }
 
 func NewDirectory(title string, roman, bold, typewriter *FontMetrics) *Directory {

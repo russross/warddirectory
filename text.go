@@ -10,6 +10,7 @@ import (
 
 // The minimum allowed space size as a fraction of the normal size
 const MinSpaceSize = .75
+const MinLineHeight = .95
 
 // How much worse is it to squish spaces than to pad the line with spaces?
 const SquishedPenalty = 5.0
@@ -266,14 +267,14 @@ func BreakParagraph(words []*Box, firstlinewidth, linewidth, spacesize float64) 
 	if math.IsInf(matrix[0][dim-1].cost, 1) || len(words) == 0 {
 		return nil
 	}
-	for _, row := range matrix {
-		for _, col := range row {
-			fmt.Printf("%8.1f %3d ", col.cost, col.nextline)
-		}
-		fmt.Println()
-	}
+	//	for _, row := range matrix {
+	//		for _, col := range row {
+	//			fmt.Printf("%8.1f %3d ", col.cost, col.nextline)
+	//		}
+	//		fmt.Println()
+	//	}
 
-	startofeachline = []int{}
+	startofeachline = nil
 	for nextline := 0; nextline < dim; nextline = matrix[nextline][dim-1].nextline {
 		startofeachline = append(startofeachline, nextline)
 	}
@@ -324,4 +325,73 @@ func LineCost(width, spacesize float64, words []*Box, lastline bool) (cost float
 		return squish*SquishedPenalty + penalty
 	}
 	panic("Can't get here")
+}
+
+func BreakColumns(entries [][]int, columnheight float64) (startofeachcolumn []int) {
+	// the matrix of costs:
+	//   matrix[from][to] = cost of breaking entries[from:to+1]
+	dim := len(entries)
+	backing := make([]breakpoint, dim*dim)
+	matrix := make([][]breakpoint, dim)
+	for i := 0; i < dim; i++ {
+		matrix[i] = backing[i*dim : (i+1)*dim]
+	}
+
+	for from := dim - 1; from >= 0; from-- {
+		for to := dim - 1; to >= from; to-- {
+			// best = min(cost(from, i) + cost(i+1, to))
+			matrix[from][to] = breakpoint{math.Inf(1), -1}
+			for i := from; i <= to; i++ {
+				cost := ColumnCost(columnheight, entries[from:i+1])
+				if i+1 <= to {
+					cost += matrix[i+1][to].cost
+				}
+				if cost < matrix[from][to].cost {
+					matrix[from][to] = breakpoint{cost, i + 1}
+				}
+			}
+		}
+	}
+
+	if math.IsInf(matrix[0][dim-1].cost, 1) || len(entries) == 0 {
+		return nil
+	}
+	//	for _, row := range matrix {
+	//		for _, col := range row {
+	//			fmt.Printf("%8.1f %3d ", col.cost, col.nextline)
+	//		}
+	//		fmt.Println()
+	//	}
+
+	startofeachcolumn = nil
+	for nextline := 0; nextline < dim; nextline = matrix[nextline][dim-1].nextline {
+		startofeachcolumn = append(startofeachcolumn, nextline)
+	}
+	return
+}
+
+func ColumnCost(columnheight float64, entries [][]int) float64 {
+	// count up the number of lines
+	count := 0
+	for _, entry := range entries {
+		count += len(entry)
+	}
+
+	// units are normalized to one line per 1000 columnheight units
+	squeeze := (columnheight / 1000.0) / float64(count)
+
+	// forbid squeezing too much
+	if squeeze < MinLineHeight {
+		return math.Inf(1)
+	}
+
+	extralines := columnheight/1000.0 - float64(count)
+
+	// squeezing is worse than stretching
+	if extralines < 0 {
+		return extralines * extralines * SquishedPenalty
+	}
+
+	// how many lines worth?
+	return extralines * extralines
 }

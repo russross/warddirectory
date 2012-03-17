@@ -44,18 +44,34 @@ func main() {
 		log.Fatal("formatting families: ", err)
 	}
 
-	for _, elt := range dir.Entries {
-		fmt.Println("Family:")
-		for _, word := range elt {
-			fmt.Printf("    [%s] %s\n", word.Original, word.Command)
-		}
+	// find the font size
+	if err = dir.findFontSize(); err != nil {
+		log.Fatal("finding font size: ", err)
 	}
 
-	//	// find the font size
-	//	if err = dir.findFontSize(); err != nil {
-	//		log.Fatal("finding font size: ", err)
-	//	}
-	//
+	fmt.Printf("Font size found: %v\n", dir.FontSize)
+	for i, family := range dir.Entries {
+		line := 0
+		for j, box := range family {
+			if line < len(dir.Linebreaks[i]) && j == dir.Linebreaks[i][line] {
+				fmt.Println()
+				if line > 0 {
+					fmt.Print("   ")
+				}
+				line++
+			}
+			fmt.Print(box.Original)
+			if !box.JoinNext {
+				fmt.Print(" ")
+			}
+		}
+		fmt.Println()
+	}
+
+	for _, n := range dir.Columnbreaks {
+		fmt.Printf("Column break at entry %v (%v)\n", n, dir.Families[n].Surname)
+	}
+
 	//	// render the family listings
 	//	if err = dir.renderFamilies(); err != nil {
 	//		log.Fatal("rendering families: ", err)
