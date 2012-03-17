@@ -176,7 +176,7 @@ func (font *FontMetrics) MakeBox(text string) (box *Box, err error) {
 
 		switch {
 		// simple glyphs
-		case glyph.Code < 0x80 && kern != 0:
+		case glyph.Code < 0x80:
 			switch glyph.Code {
 			case '(':
 				pending += "\\("
@@ -187,11 +187,11 @@ func (font *FontMetrics) MakeBox(text string) (box *Box, err error) {
 			default:
 				pending += fmt.Sprintf("%c", glyph.Code)
 			}
-			cmd += fmt.Sprintf("(%s)%d", pending, -kern)
-			pending = ""
-			simple = false
-		case glyph.Code < 0x80:
-			pending += fmt.Sprintf("%c", glyph.Code)
+			if kern != 0 {
+				cmd += fmt.Sprintf("(%s)%d", pending, -kern)
+				pending = ""
+				simple = false
+			}
 
 		// need to use a hex code for this glyph
 		case pending != "" && kern != 0:

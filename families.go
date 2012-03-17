@@ -137,12 +137,6 @@ func prepPhone(phone, familyPhone string) string {
 }
 
 func prepEmail(email, familyEmail string) string {
-	// escape _ for LaTeX
-	email = strings.Replace(email, "_", "\\_", -1)
-	if email != "" {
-		email = "\\texttt{" + email + "}"
-	}
-
 	if email == familyEmail {
 		email = ""
 	}

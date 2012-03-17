@@ -12,7 +12,7 @@ const (
 	fontPrefix     = "fonts"
 	romanFont      = "ptmr8a.afm"
 	boldFont       = "ptmb8a.afm"
-	typewriterFont = "cmtt8a.afm"
+	typewriterFont = "cmtt8.afm"
 )
 
 func main() {
@@ -42,6 +42,13 @@ func main() {
 	// format families
 	if err = dir.formatFamilies(); err != nil {
 		log.Fatal("formatting families: ", err)
+	}
+
+	for _, elt := range dir.Entries {
+		fmt.Println("Family:")
+		for _, word := range elt {
+			fmt.Printf("    [%s] %s\n", word.Original, word.Command)
+		}
 	}
 
 	//	// find the font size
