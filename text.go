@@ -395,3 +395,96 @@ func ColumnCost(columnheight float64, entries [][]int) float64 {
 	// how many lines worth?
 	return extralines * extralines
 }
+
+func (dir *Directory) splitIntoLines() (err error) {
+	for i, entry := range dir.Entries {
+		var newentry [][]*Box
+		breaks := dir.Linebreaks[i]
+		for j, start := range breaks {
+			var line []*Box
+			if j+1 < len(breaks) {
+				line = entry[start:breaks[j+1]]
+			} else {
+				line = entry[start:]
+			}
+
+			if line, err = dir.simplyLine(line); err != nil {
+				return
+			}
+
+			newentry = append(newentry, line)
+		}
+
+		dir.Lines = append(dir.Lines, newentry)
+	}
+
+	return
+}
+
+// insert explicit spaces into a line
+func (dir *Directory) simplyLine(boxes []*Box) (simple []*Box, err error) {
+	for i := 0; i < len(boxes); i++ {
+		box := boxes[i]
+
+		// last box of the line?
+		if i+1 == len(boxes) {
+			simple = append(simple, box)
+			break
+		}
+
+		next := boxes[i+1]
+
+		switch {
+		// nothing to be done
+		case box.JoinNext && box.Font != next.Font:
+			simple = append(simple, box)
+
+		// simple merger
+		case box.JoinNext:
+			if boxes[i+1], err = box.Font.MakeBox(box.Original + next.Original); err != nil {
+				return
+			}
+
+		// same font with a space between
+		case box.Font == next.Font:
+			if boxes[i+1], err = box.Font.MakeBox(box.Original + " " + next.Original); err != nil {
+				return
+			}
+
+		// roman followed by anything
+		case box.Font == dir.Roman:
+			if box, err = box.Font.MakeBox(box.Original + " "); err != nil {
+				return
+			}
+			simple = append(simple, box)
+
+		// anything followed by roman
+		case next.Font == dir.Roman:
+			if next, err = next.Font.MakeBox(" " + next.Original); err != nil {
+				return
+			}
+			boxes[i+1] = next
+			simple = append(simple, box)
+
+		// bold followed by anything
+		case box.Font == dir.Bold:
+			if box, err = box.Font.MakeBox(box.Original + " "); err != nil {
+				return
+			}
+			simple = append(simple, box)
+
+		// anything followed by bold
+		case next.Font == dir.Bold:
+			if next, err = next.Font.MakeBox(" " + next.Original); err != nil {
+				return
+			}
+			boxes[i+1] = next
+			simple = append(simple, box)
+
+		default:
+			panic("Can't get here")
+		}
+	}
+
+	return
+}

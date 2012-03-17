@@ -50,20 +50,20 @@ func main() {
 	}
 
 	fmt.Printf("Font size found: %v\n", dir.FontSize)
-	for i, family := range dir.Entries {
-		line := 0
-		for j, box := range family {
-			if line < len(dir.Linebreaks[i]) && j == dir.Linebreaks[i][line] {
-				fmt.Println()
-				if line > 0 {
-					fmt.Print("   ")
-				}
-				line++
+
+	if err = dir.splitIntoLines(); err != nil {
+		log.Fatal("splitting families into lines: ", err)
+	}
+
+	for _, family := range dir.Lines {
+		for i, line := range family {
+			if i > 0 {
+				fmt.Print("   ")
 			}
-			fmt.Print(box.Original)
-			if !box.JoinNext {
-				fmt.Print(" ")
+			for _, box := range line {
+				fmt.Print(box.Command, " ")
 			}
+			fmt.Println()
 		}
 		fmt.Println()
 	}
@@ -71,6 +71,10 @@ func main() {
 	for _, n := range dir.Columnbreaks {
 		fmt.Printf("Column break at entry %v (%v)\n", n, dir.Families[n].Surname)
 	}
+
+	//	if err = dir.simplifyBoxes(); err != nil {
+	//		log.Fatal("simplifying family entries: ", err)
+	//	}
 
 	//	// render the family listings
 	//	if err = dir.renderFamilies(); err != nil {

@@ -133,6 +133,7 @@ type Directory struct {
 	Entries      [][]*Box
 	Linebreaks   [][]int
 	Columnbreaks []int
+	Lines        [][][]*Box
 	FontSize     float64
 }
 
