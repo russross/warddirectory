@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"math"
 	"strings"
+	"time"
 )
 
 // The minimum allowed space size as a fraction of the normal size
@@ -202,7 +203,7 @@ func (font *FontMetrics) MakeBox(text string, spacecompress float64) (box *Box, 
 				if float64(int(kern)) == kern {
 					cmd += fmt.Sprintf("(%s)%d", pending, -int(kern))
 				} else {
-					cmd += fmt.Sprintf("(%s)%.2f", pending, -kern)
+					cmd += fmt.Sprintf("(%s)%.3f", pending, -kern)
 				}
 				pending = ""
 				simple = false
@@ -437,6 +438,8 @@ func (dir *Directory) splitIntoLines() (err error) {
 
 // insert explicit spaces into a line
 func (dir *Directory) simplifyLine(boxes []*Box) (simple []*Box, err error) {
+	// TODO: squeeze spacing
+	spacesize := 1.0
 	for i := 0; i < len(boxes); i++ {
 		box := boxes[i]
 
@@ -456,7 +459,7 @@ func (dir *Directory) simplifyLine(boxes []*Box) (simple []*Box, err error) {
 		// simple merger
 		case box.JoinNext:
 			join := next.JoinNext
-			if boxes[i+1], err = box.Font.MakeBox(box.Original+next.Original, 1.0); err != nil {
+			if boxes[i+1], err = box.Font.MakeBox(box.Original+next.Original, spacesize); err != nil {
 				return
 			}
 			boxes[i+1].JoinNext = join
@@ -464,7 +467,7 @@ func (dir *Directory) simplifyLine(boxes []*Box) (simple []*Box, err error) {
 		// same font with a space between
 		case box.Font == next.Font:
 			join := next.JoinNext
-			if boxes[i+1], err = box.Font.MakeBox(box.Original+" "+next.Original, 1.0); err != nil {
+			if boxes[i+1], err = box.Font.MakeBox(box.Original+" "+next.Original, spacesize); err != nil {
 				return
 			}
 			boxes[i+1].JoinNext = join
@@ -472,7 +475,7 @@ func (dir *Directory) simplifyLine(boxes []*Box) (simple []*Box, err error) {
 		// roman followed by anything
 		case box.Font == dir.Roman:
 			join := box.JoinNext
-			if box, err = box.Font.MakeBox(box.Original+" ", 1.0); err != nil {
+			if box, err = box.Font.MakeBox(box.Original+" ", spacesize); err != nil {
 				return
 			}
 			box.JoinNext = join
@@ -481,7 +484,7 @@ func (dir *Directory) simplifyLine(boxes []*Box) (simple []*Box, err error) {
 		// anything followed by roman
 		case next.Font == dir.Roman:
 			join := next.JoinNext
-			if boxes[i+1], err = next.Font.MakeBox(" "+next.Original, 1.0); err != nil {
+			if boxes[i+1], err = next.Font.MakeBox(" "+next.Original, spacesize); err != nil {
 				return
 			}
 			boxes[i+1].JoinNext = join
@@ -490,7 +493,7 @@ func (dir *Directory) simplifyLine(boxes []*Box) (simple []*Box, err error) {
 		// bold followed by anything
 		case box.Font == dir.Bold:
 			join := box.JoinNext
-			if box, err = box.Font.MakeBox(box.Original+" ", 1.0); err != nil {
+			if box, err = box.Font.MakeBox(box.Original+" ", spacesize); err != nil {
 				return
 			}
 			box.JoinNext = join
@@ -499,7 +502,7 @@ func (dir *Directory) simplifyLine(boxes []*Box) (simple []*Box, err error) {
 		// anything followed by bold
 		case next.Font == dir.Bold:
 			join := next.JoinNext
-			if boxes[i+1], err = next.Font.MakeBox(" "+next.Original, 1.0); err != nil {
+			if boxes[i+1], err = next.Font.MakeBox(" "+next.Original, spacesize); err != nil {
 				return
 			}
 			boxes[i+1].JoinNext = join
@@ -553,6 +556,7 @@ func (dir *Directory) renderColumn(entries [][][]*Box, number int) (rendered str
 	dy := -(dir.ColumnHeight - dir.FontSize) / float64(count-1)
 
 	// now walk through the entries and build each one
+	rendered = "BT\n"
 	for _, entry := range entries {
 		elt := ""
 		for i, line := range entry {
@@ -577,6 +581,55 @@ func (dir *Directory) renderColumn(entries [][][]*Box, number int) (rendered str
 
 		rendered += elt
 	}
+	rendered += "ET\n"
+
+	return
+}
+
+func (dir *Directory) renderHeader() (err error) {
+	var title, date, useonly *Box
+	if title, err = dir.Bold.MakeBox(dir.Title, 1.0); err != nil {
+		return
+	}
+	if date, err = dir.Roman.MakeBox(time.Now().Format("January 2, 2006"), 1.0); err != nil {
+		return
+	}
+	if useonly, err = dir.Roman.MakeBox(ForChurchUseOnly, 1.0); err != nil {
+		return
+	}
+
+	// figure out where the hrule goes
+	length := dir.PageWidth - dir.RightMargin - dir.LeftMargin
+	hrule := dir.PageHeight - dir.TopMargin
+	y := hrule + dir.FontSize*(1.0-float64(dir.Roman.CapHeight)/1000.0)
+
+	text := "0 g 0 G\n"
+	text += "BT\n"
+
+	// place the date
+	text += fmt.Sprintf("1 0 0 1 %.3f %.3f Tm\n", dir.LeftMargin, y)
+	text += fmt.Sprintf("/%s %.3f Tf %s\n", dir.Roman.Label, dir.FontSize, date.Command)
+
+	// place the title
+	tfontsize := dir.FontSize * TitleFontMultiplier
+	text += fmt.Sprintf("1 0 0 1 %.3f %.3f Tm\n",
+		(dir.PageWidth-title.Width/1000.0*tfontsize)/2.0, y)
+	text += fmt.Sprintf("/%s %.3f Tf %s\n", dir.Bold.Label, tfontsize, title.Command)
+
+	// place the church-use-only text
+	text += fmt.Sprintf("1 0 0 1 %.3f %.3f Tm\n",
+		dir.PageWidth-dir.RightMargin-useonly.Width/1000.0*dir.FontSize, y)
+	text += fmt.Sprintf("/%s %.3f Tf %s\n", dir.Roman.Label, dir.FontSize, useonly.Command)
+
+	text += "ET\n"
+
+	// place the hrule
+	text += "q\n"
+	text += fmt.Sprintf("1 0 0 1 %.3f %.3f cm\n", dir.LeftMargin, hrule)
+	text += fmt.Sprintf("[]0 d 0 J 0.5 w 0 0 m %.3f 0 l s\n", length)
+	text += "Q\n0 g 0 G\n"
+
+	dir.Header = text
 
 	return
 }

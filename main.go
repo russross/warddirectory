@@ -9,10 +9,11 @@ import (
 )
 
 const (
-	fontPrefix     = "fonts"
-	romanFont      = "ptmr8a.afm"
-	boldFont       = "ptmb8a.afm"
-	typewriterFont = "pcrr8a.afm"
+	fontPrefix       = "fonts"
+	romanFont        = "ptmr8a.afm"
+	boldFont         = "ptmb8a.afm"
+	typewriterFont   = "pcrr8a.afm"
+	ForChurchUseOnly = "For Church Use Only"
 )
 
 func main() {
@@ -67,6 +68,11 @@ func main() {
 		log.Fatal("rendering columns: ", err)
 	}
 
+	// render the header
+	if err = dir.renderHeader(); err != nil {
+		log.Fatal("rendering header: ", err)
+	}
+
 	// generate the PDF file
 	if err = dir.makePDF(); err != nil {
 		log.Fatal("making the PDF: ", err)
@@ -101,7 +107,7 @@ func (dir *Directory) makePDF() error {
 	doc.AddObject(fmt.Sprintf(obj_font, "/"+dir.Typewriter.Name))
 	col := 0
 	for page := 0; page < 2; page++ {
-		text := ""
+		text := dir.Header
 		for i := 0; i < dir.ColumnsPerPage; i++ {
 			text += dir.Columns[col]
 			col++

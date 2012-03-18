@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"math"
 )
 
 type Value interface {
@@ -117,11 +118,12 @@ const (
 	MaximumFontSize float64 = 18.0
 )
 
+var TitleFontMultiplier float64 = math.Sqrt(2.0)
+
 type Directory struct {
 	PageWidth, PageHeight       float64
 	TopMargin, BottomMargin     float64
 	LeftMargin, RightMargin     float64
-	HeaderHeight                float64
 	ColumnsPerPage, ColumnCount int
 	ColumnSep                   float64
 	ColumnWidth, ColumnHeight   float64
@@ -136,17 +138,17 @@ type Directory struct {
 	Lines        [][][]*Box
 	FontSize     float64
 	Columns      []string
+	Header       string
 }
 
 func NewDirectory(title string, roman, bold, typewriter *FontMetrics) *Directory {
 	elt := &Directory{
 		PageWidth:      8.5 * inch,
 		PageHeight:     11.0 * inch,
-		TopMargin:      .75 * inch,
+		TopMargin:      1.0 * inch, // note: header is in top margin
 		BottomMargin:   .75 * inch,
 		LeftMargin:     .5 * inch,
 		RightMargin:    .5 * inch,
-		HeaderHeight:   20.0,
 		ColumnsPerPage: 2,
 		ColumnSep:      10.0,
 
@@ -165,7 +167,6 @@ func NewDirectory(title string, roman, bold, typewriter *FontMetrics) *Directory
 	elt.ColumnHeight = elt.PageHeight
 	elt.ColumnHeight -= elt.TopMargin
 	elt.ColumnHeight -= elt.BottomMargin
-	elt.ColumnHeight -= elt.HeaderHeight
 
 	return elt
 }
