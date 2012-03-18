@@ -360,7 +360,7 @@ func LineCost(width, spacesize float64, words []*Box, lastline bool) (cost float
 
 		// no penalty for trailing spaces on the last line
 		if lastline {
-			excess = 0.0
+			//excess = 0.0
 		}
 
 		return excess*excess + penalty
