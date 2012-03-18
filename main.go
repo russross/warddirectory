@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"compress/zlib"
 	"fmt"
 	"log"
 	"os"
@@ -14,6 +16,7 @@ const (
 	boldFont         = "ptmb8a.afm"
 	typewriterFont   = "pcrr8a.afm"
 	ForChurchUseOnly = "For Church Use Only"
+	CompressStreams  = false
 )
 
 func main() {
@@ -53,14 +56,8 @@ func main() {
 		log.Fatal("finding font size: ", err)
 	}
 
-	fmt.Printf("Font size found: %v\n", dir.FontSize)
-
 	if err = dir.splitIntoLines(); err != nil {
 		log.Fatal("splitting families into lines: ", err)
-	}
-
-	for _, n := range dir.Columnbreaks {
-		fmt.Printf("Column break at entry %v (%v)\n", n, dir.Families[n].Surname)
 	}
 
 	// render the family listings
@@ -79,7 +76,7 @@ func main() {
 	}
 }
 
-func (dir *Directory) makePDF() error {
+func (dir *Directory) makePDF() (err error) {
 	// make the PDF file
 	doc := NewDocument()
 
@@ -112,7 +109,22 @@ func (dir *Directory) makePDF() error {
 			text += dir.Columns[col]
 			col++
 		}
-		doc.AddStream(obj_page_stream, []byte(text))
+		if CompressStreams {
+			var compressed bytes.Buffer
+			var writer *zlib.Writer
+			if writer, err = zlib.NewWriterLevel(&compressed, zlib.BestCompression); err != nil {
+				return
+			}
+			if _, err = writer.Write([]byte(text)); err != nil {
+				return
+			}
+			if err = writer.Close(); err != nil {
+				return
+			}
+			doc.AddStream(obj_page_stream_flate, compressed.Bytes())
+		} else {
+			doc.AddStream(obj_page_stream, []byte(text))
+		}
 	}
 	doc.WriteTrailer(info, catalog)
 	doc.Dump()

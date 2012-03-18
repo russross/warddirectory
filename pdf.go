@@ -101,6 +101,12 @@ const obj_page_stream = `<<
 >>
 `
 
+const obj_page_stream_flate = `<<
+  /Length %d
+  /Filter /FlateDecode
+>>
+`
+
 const obj_trailer = `trailer
 <<
   /Size %d

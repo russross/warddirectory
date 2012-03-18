@@ -10,7 +10,7 @@ import (
 )
 
 // The minimum allowed space size as a fraction of the normal size
-const MinSpaceSize = .75
+const MinSpaceSize = .85
 const MinLineHeight = .95
 const Leading = 1.2
 
@@ -182,7 +182,7 @@ func (font *FontMetrics) MakeBox(text string, spacecompress float64) (box *Box, 
 
 		// do we need to "kern" this space to squish it?
 		if spacecompress != 1.0 && glyph.Code == ' ' {
-			kern += float64(glyph.Width) - float64(glyph.Width)*spacecompress
+			kern -= float64(glyph.Width) - float64(glyph.Width)*spacecompress
 		}
 		width += float64(glyph.Width) + kern
 
@@ -337,7 +337,7 @@ func LineCost(width, spacesize float64, words []*Box, lastline bool) (cost float
 	// squished fit
 	default:
 		squish := (maxwidth - width) / spacesize
-		return squish*SquishedPenalty + penalty
+		return squish*squish*SquishedPenalty + penalty
 	}
 	panic("Can't get here")
 }
@@ -371,12 +371,6 @@ func BreakColumns(entries [][]int, columnheight float64) (startofeachcolumn []in
 	if math.IsInf(matrix[0][dim-1].cost, 1) || len(entries) == 0 {
 		return nil
 	}
-	//	for _, row := range matrix {
-	//		for _, col := range row {
-	//			fmt.Printf("%8.1f %3d ", col.cost, col.nextline)
-	//		}
-	//		fmt.Println()
-	//	}
 
 	startofeachcolumn = nil
 	for nextline := 0; nextline < dim; nextline = matrix[nextline][dim-1].nextline {
@@ -402,16 +396,13 @@ func ColumnCost(columnheight float64, entries [][]int) float64 {
 
 	extralines := columnheight/1000.0 - float64(count)
 
-	// squeezing is worse than stretching
-	if extralines < 0 {
-		return extralines * extralines * SquishedPenalty
-	}
-
 	// how many lines worth?
 	return extralines * extralines
 }
 
 func (dir *Directory) splitIntoLines() (err error) {
+	firstlinewidth := dir.ColumnWidth * 1000.0 / dir.FontSize
+	linewidth := firstlinewidth - goldenratio*1000.0
 	for i, entry := range dir.Entries {
 		var newentry [][]*Box
 		breaks := dir.Linebreaks[i]
@@ -423,7 +414,12 @@ func (dir *Directory) splitIntoLines() (err error) {
 				line = entry[start:]
 			}
 
-			if line, err = dir.simplifyLine(line); err != nil {
+			width := firstlinewidth
+			if j > 0 {
+				width = linewidth
+			}
+
+			if line, err = dir.simplifyLine(line, width); err != nil {
 				return
 			}
 
@@ -437,9 +433,25 @@ func (dir *Directory) splitIntoLines() (err error) {
 }
 
 // insert explicit spaces into a line
-func (dir *Directory) simplifyLine(boxes []*Box) (simple []*Box, err error) {
-	// TODO: squeeze spacing
-	spacesize := 1.0
+func (dir *Directory) simplifyLine(boxes []*Box, linewidth float64) (simple []*Box, err error) {
+	// count up the spaces and the total line width
+	var width, spaces float64
+	for i, box := range boxes {
+		width += float64(box.Width)
+		if !box.JoinNext && i+1 < len(boxes) {
+			spaces += 1
+		}
+	}
+	spacefactor := float64(1.0)
+	spacesize := float64(dir.Roman.Glyphs["space"].Width)
+	maxwidth := width + spaces*spacesize
+
+	if maxwidth > linewidth {
+		// how much do we need to squeeze each space?
+		extra := maxwidth - linewidth
+		spacefactor = (spacesize - extra/spaces) / spacesize
+	}
+
 	for i := 0; i < len(boxes); i++ {
 		box := boxes[i]
 
@@ -459,7 +471,7 @@ func (dir *Directory) simplifyLine(boxes []*Box) (simple []*Box, err error) {
 		// simple merger
 		case box.JoinNext:
 			join := next.JoinNext
-			if boxes[i+1], err = box.Font.MakeBox(box.Original+next.Original, spacesize); err != nil {
+			if boxes[i+1], err = box.Font.MakeBox(box.Original+next.Original, spacefactor); err != nil {
 				return
 			}
 			boxes[i+1].JoinNext = join
@@ -467,7 +479,7 @@ func (dir *Directory) simplifyLine(boxes []*Box) (simple []*Box, err error) {
 		// same font with a space between
 		case box.Font == next.Font:
 			join := next.JoinNext
-			if boxes[i+1], err = box.Font.MakeBox(box.Original+" "+next.Original, spacesize); err != nil {
+			if boxes[i+1], err = box.Font.MakeBox(box.Original+" "+next.Original, spacefactor); err != nil {
 				return
 			}
 			boxes[i+1].JoinNext = join
@@ -475,7 +487,7 @@ func (dir *Directory) simplifyLine(boxes []*Box) (simple []*Box, err error) {
 		// roman followed by anything
 		case box.Font == dir.Roman:
 			join := box.JoinNext
-			if box, err = box.Font.MakeBox(box.Original+" ", spacesize); err != nil {
+			if box, err = box.Font.MakeBox(box.Original+" ", spacefactor); err != nil {
 				return
 			}
 			box.JoinNext = join
@@ -484,7 +496,7 @@ func (dir *Directory) simplifyLine(boxes []*Box) (simple []*Box, err error) {
 		// anything followed by roman
 		case next.Font == dir.Roman:
 			join := next.JoinNext
-			if boxes[i+1], err = next.Font.MakeBox(" "+next.Original, spacesize); err != nil {
+			if boxes[i+1], err = next.Font.MakeBox(" "+next.Original, spacefactor); err != nil {
 				return
 			}
 			boxes[i+1].JoinNext = join
@@ -493,7 +505,7 @@ func (dir *Directory) simplifyLine(boxes []*Box) (simple []*Box, err error) {
 		// bold followed by anything
 		case box.Font == dir.Bold:
 			join := box.JoinNext
-			if box, err = box.Font.MakeBox(box.Original+" ", spacesize); err != nil {
+			if box, err = box.Font.MakeBox(box.Original+" ", spacefactor); err != nil {
 				return
 			}
 			box.JoinNext = join
@@ -502,7 +514,7 @@ func (dir *Directory) simplifyLine(boxes []*Box) (simple []*Box, err error) {
 		// anything followed by bold
 		case next.Font == dir.Bold:
 			join := next.JoinNext
-			if boxes[i+1], err = next.Font.MakeBox(" "+next.Original, spacesize); err != nil {
+			if boxes[i+1], err = next.Font.MakeBox(" "+next.Original, spacefactor); err != nil {
 				return
 			}
 			boxes[i+1].JoinNext = join

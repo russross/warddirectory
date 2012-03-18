@@ -20,6 +20,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"log"
 	"regexp"
 	"sort"
 	"strings"
@@ -190,16 +191,17 @@ func (dir *Directory) parseFamilies(src io.Reader) error {
 		// split the address into street, state, postal
 		parts := ADDRESS_RE.FindStringSubmatch(family.Address)
 		if parts == nil {
-			return fmt.Errorf("Malformed address for %s %s family", family.Couple, family.Surname)
-		}
-		for i, elt := range parts {
-			parts[i] = strings.TrimSpace(elt)
-		}
-		// street, city, state, postal code
-		family.Address, family.City, family.State, family.Zip = parts[1], parts[2], parts[3], parts[4]
+			log.Printf("Malformed address for %s family", family.Couple)
+		} else {
+			for i, elt := range parts {
+				parts[i] = strings.TrimSpace(elt)
+			}
+			// street, city, state, postal code
+			family.Address, family.City, family.State, family.Zip = parts[1], parts[2], parts[3], parts[4]
 
-		// prepare address
-		family.Address = prepStreet(family.Address)
+			// prepare address
+			family.Address = prepStreet(family.Address)
+		}
 
 		// prepare the family phone number
 		family.Phone = prepPhone(family.Phone, "")
@@ -307,25 +309,45 @@ func (dir *Directory) formatFamilies() (err error) {
 			}
 		}
 
+		needcomma := false
+
 		// next the phone number (if present)
 		if family.Phone != "" {
-			if entry, err = packBox(entry, family.Phone+",", 0, dir.Roman); err != nil {
+			if needcomma {
+				if entry, err = packBox(entry, ",", -1, dir.Roman); err != nil {
+					return
+				}
+				needcomma = false
+			}
+			if entry, err = packBox(entry, family.Phone, 0, dir.Roman); err != nil {
 				return
 			}
+			needcomma = true
 		}
 
 		// next the email address (if present)
 		if family.Email != "" {
+			if needcomma {
+				if entry, err = packBox(entry, ",", -1, dir.Roman); err != nil {
+					return
+				}
+				needcomma = false
+			}
 			if entry, err = packBox(entry, family.Email, 0, dir.Typewriter); err != nil {
 				return
 			}
-			if entry, err = packBox(entry, ",", -1, dir.Roman); err != nil {
-				return
-			}
+			needcomma = true
 		}
 
 		// now the family members
 		for _, person := range family.People {
+			if needcomma {
+				if entry, err = packBox(entry, ",", -1, dir.Roman); err != nil {
+					return
+				}
+				needcomma = false
+			}
+
 			// split the person's name into discrete words
 			for i, word := range strings.Fields(person.Name) {
 				space := 0
@@ -341,9 +363,7 @@ func (dir *Directory) formatFamilies() (err error) {
 
 			// no contact details?  just end with a comma
 			if person.Phone == "" && person.Email == "" {
-				if entry, err = packBox(entry, ",", -1, dir.Roman); err != nil {
-					return
-				}
+				needcomma = true
 				continue
 			}
 
@@ -357,6 +377,7 @@ func (dir *Directory) formatFamilies() (err error) {
 				if entry, err = packBox(entry, person.Phone, -1, dir.Roman); err != nil {
 					return
 				}
+				needcomma = true
 			}
 
 			// email
@@ -364,13 +385,12 @@ func (dir *Directory) formatFamilies() (err error) {
 				// discourage line breaks within a person's entry
 				space := 1
 
-				// following the phone number? join with a comma
-				if person.Phone != "" {
+				if needcomma {
 					if entry, err = packBox(entry, ",", -1, dir.Roman); err != nil {
 						return
 					}
+					needcomma = false
 				} else {
-					// join it to the open paren
 					space = -1
 				}
 
@@ -381,30 +401,45 @@ func (dir *Directory) formatFamilies() (err error) {
 			}
 
 			// close paren and comma
-			if entry, err = packBox(entry, "),", -1, dir.Roman); err != nil {
+			if entry, err = packBox(entry, ")", -1, dir.Roman); err != nil {
 				return
 			}
+			needcomma = true
 		}
 
 		// address comes next
 		// split the address into words
-		for i, word := range strings.Fields(family.Address) {
-			space := 0
+		if family.Address != "" {
+			if needcomma {
+				if entry, err = packBox(entry, ",", -1, dir.Roman); err != nil {
+					return
+				}
+				needcomma = false
+			}
 
-			// strongly discourage line breaks within an address
-			if i > 0 {
-				space = 2
+			for i, word := range strings.Fields(family.Address) {
+				space := 0
+
+				// strongly discourage line breaks within an address
+				if i > 0 {
+					space = 2
+				}
+				if entry, err = packBox(entry, word, space, dir.Roman); err != nil {
+					return
+				}
 			}
-			if entry, err = packBox(entry, word, space, dir.Roman); err != nil {
-				return
-			}
+			needcomma = true
 		}
 
 		// only show the city if it is not the default
 		if family.City != CITY && family.City != "" {
-			if entry, err = packBox(entry, ",", -1, dir.Roman); err != nil {
-				return
+			if needcomma {
+				if entry, err = packBox(entry, ",", -1, dir.Roman); err != nil {
+					return
+				}
+				needcomma = false
 			}
+
 			// split the city into words
 			for i, word := range strings.Fields(family.City) {
 				space := 0
