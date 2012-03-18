@@ -95,8 +95,8 @@ func (dir *Directory) makePDF() (err error) {
 	page2Contents := doc.ForwardRef(4)
 	fontResource := doc.ForwardRef(5)
 	doc.AddObject(fmt.Sprintf(obj_pages, page1, page2))
-	doc.AddObject(fmt.Sprintf(obj_page, pages, fontResource, page1Contents))
-	doc.AddObject(fmt.Sprintf(obj_page, pages, fontResource, page2Contents))
+	doc.AddObject(fmt.Sprintf(obj_page, dir.PageWidth, dir.PageHeight, pages, fontResource, page1Contents))
+	doc.AddObject(fmt.Sprintf(obj_page, dir.PageWidth, dir.PageHeight, pages, fontResource, page2Contents))
 
 	// pages
 	col := 0

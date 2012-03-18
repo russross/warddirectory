@@ -6,7 +6,7 @@ all:	directory.pdf
 membership.csv:	~/Downloads/373621.csv
 	cp ~/Downloads/373621.csv ./membership.csv
 
-directory.pdf:	membership.csv
+directory.pdf:	membership.csv *.go
 	go run *.go < membership.csv > directory.pdf
 
 clean:

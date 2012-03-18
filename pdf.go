@@ -67,7 +67,7 @@ const obj_pages = `<<
 `
 const obj_page = `<<
   /Type /Page
-  /MediaBox [0 0 612 792]
+  /MediaBox [0 0 %.3f %.3f]
   /Rotate 0
   /Parent %s
   /Resources <<
