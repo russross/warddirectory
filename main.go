@@ -19,7 +19,8 @@ const (
 	typewriterFontFile = "cmtt10.pfb"
 	typewriterStemV    = 125
 	ForChurchUseOnly   = "For Church Use Only"
-	CompressStreams    = false
+	CompressStreams    = true
+	// typewriterFont     = "pcrr8a.afm"
 )
 
 func main() {

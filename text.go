@@ -14,9 +14,6 @@ const MinSpaceSize = .85
 const MinLineHeight = .95
 const Leading = 1.2
 
-// How much worse is it to squish spaces than to pad the line with spaces?
-const SquishedPenalty = 5.0
-
 type GlyphMetrics struct {
 	Code       int
 	Width      int
@@ -322,12 +319,6 @@ func BreakParagraph(words []*Box, firstlinewidth, linewidth, spacesize float64) 
 	if math.IsInf(matrix[0][dim-1].cost, 1) || len(words) == 0 {
 		return nil
 	}
-	//	for _, row := range matrix {
-	//		for _, col := range row {
-	//			fmt.Printf("%8.1f %3d ", col.cost, col.nextline)
-	//		}
-	//		fmt.Println()
-	//	}
 
 	startofeachline = nil
 	for nextline := 0; nextline < dim; nextline = matrix[nextline][dim-1].nextline {
@@ -377,7 +368,7 @@ func LineCost(width, spacesize float64, words []*Box, lastline bool) (cost float
 	// squished fit
 	default:
 		squish := (maxwidth - width) / spacesize
-		return squish*squish*SquishedPenalty + penalty
+		return squish*squish*squish + penalty
 	}
 	panic("Can't get here")
 }
@@ -434,7 +425,12 @@ func ColumnCost(columnheight float64, entries [][]int) float64 {
 		return math.Inf(1)
 	}
 
-	extralines := columnheight/1000.0 - float64(count)
+	extralines := ((columnheight / 1000.0) - 1.0) - (float64(count-1) * Leading)
+
+	// squishing is worse than stretching
+	if extralines < 0 {
+		return -extralines * extralines * extralines
+	}
 
 	// how many lines worth?
 	return extralines * extralines
