@@ -11,6 +11,7 @@ import (
 // The minimum allowed space size as a fraction of the normal size
 const MinSpaceSize = .75
 const MinLineHeight = .95
+const Leading = 1.2
 
 // How much worse is it to squish spaces than to pad the line with spaces?
 const SquishedPenalty = 5.0
@@ -28,9 +29,11 @@ type GlyphMetrics struct {
 }
 
 type FontMetrics struct {
-	Name   string
-	Glyphs map[string]*GlyphMetrics
-	Lookup map[int]string
+	Name      string
+	Label     string
+	CapHeight int
+	Glyphs    map[string]*GlyphMetrics
+	Lookup    map[int]string
 }
 
 type Box struct {
@@ -112,7 +115,9 @@ func parseFontMetricsFile(file string) (font *FontMetrics, err error) {
 		count := 0
 		n := 0
 		s := ""
-		if n, err = fmt.Sscanf(line, "StartCharMetrics %d", &count); n == 1 && err == nil {
+		if n, err = fmt.Sscanf(line, "CapHeight %d", &count); n == 1 && err == nil {
+			font.CapHeight = count
+		} else if n, err = fmt.Sscanf(line, "StartCharMetrics %d", &count); n == 1 && err == nil {
 			i += 1
 			for j := 0; j < count && i < len(lines); j, i = j+1, i+1 {
 				line := strings.TrimSpace(lines[i])
@@ -387,7 +392,7 @@ func ColumnCost(columnheight float64, entries [][]int) float64 {
 	}
 
 	// units are normalized to one line per 1000 columnheight units
-	squeeze := (columnheight / 1000.0) / float64(count)
+	squeeze := ((columnheight / 1000.0) - 1.0) / (float64(count-1) * Leading)
 
 	// forbid squeezing too much
 	if squeeze < MinLineHeight {
@@ -417,7 +422,7 @@ func (dir *Directory) splitIntoLines() (err error) {
 				line = entry[start:]
 			}
 
-			if line, err = dir.simplyLine(line); err != nil {
+			if line, err = dir.simplifyLine(line); err != nil {
 				return
 			}
 
@@ -431,7 +436,7 @@ func (dir *Directory) splitIntoLines() (err error) {
 }
 
 // insert explicit spaces into a line
-func (dir *Directory) simplyLine(boxes []*Box) (simple []*Box, err error) {
+func (dir *Directory) simplifyLine(boxes []*Box) (simple []*Box, err error) {
 	for i := 0; i < len(boxes); i++ {
 		box := boxes[i]
 
@@ -450,49 +455,127 @@ func (dir *Directory) simplyLine(boxes []*Box) (simple []*Box, err error) {
 
 		// simple merger
 		case box.JoinNext:
+			join := next.JoinNext
 			if boxes[i+1], err = box.Font.MakeBox(box.Original+next.Original, 1.0); err != nil {
 				return
 			}
+			boxes[i+1].JoinNext = join
 
 		// same font with a space between
 		case box.Font == next.Font:
+			join := next.JoinNext
 			if boxes[i+1], err = box.Font.MakeBox(box.Original+" "+next.Original, 1.0); err != nil {
 				return
 			}
+			boxes[i+1].JoinNext = join
 
 		// roman followed by anything
 		case box.Font == dir.Roman:
+			join := box.JoinNext
 			if box, err = box.Font.MakeBox(box.Original+" ", 1.0); err != nil {
 				return
 			}
+			box.JoinNext = join
 			simple = append(simple, box)
 
 		// anything followed by roman
 		case next.Font == dir.Roman:
-			if next, err = next.Font.MakeBox(" "+next.Original, 1.0); err != nil {
+			join := next.JoinNext
+			if boxes[i+1], err = next.Font.MakeBox(" "+next.Original, 1.0); err != nil {
 				return
 			}
-			boxes[i+1] = next
+			boxes[i+1].JoinNext = join
 			simple = append(simple, box)
 
 		// bold followed by anything
 		case box.Font == dir.Bold:
+			join := box.JoinNext
 			if box, err = box.Font.MakeBox(box.Original+" ", 1.0); err != nil {
 				return
 			}
+			box.JoinNext = join
 			simple = append(simple, box)
 
 		// anything followed by bold
 		case next.Font == dir.Bold:
-			if next, err = next.Font.MakeBox(" "+next.Original, 1.0); err != nil {
+			join := next.JoinNext
+			if boxes[i+1], err = next.Font.MakeBox(" "+next.Original, 1.0); err != nil {
 				return
 			}
-			boxes[i+1] = next
+			boxes[i+1].JoinNext = join
 			simple = append(simple, box)
 
 		default:
 			panic("Can't get here")
 		}
+	}
+
+	return
+}
+
+func (dir *Directory) renderColumns() (err error) {
+	// split the list of entries into columns
+	for i, start := range dir.Columnbreaks {
+		var column [][][]*Box
+		if i+1 < len(dir.Columnbreaks) {
+			column = dir.Lines[start:dir.Columnbreaks[i+1]]
+		} else {
+			column = dir.Lines[start:]
+		}
+
+		var text string
+		if text, err = dir.renderColumn(column, i%dir.ColumnsPerPage); err != nil {
+			return
+		}
+
+		dir.Columns = append(dir.Columns, text)
+	}
+
+	return
+}
+
+func (dir *Directory) renderColumn(entries [][][]*Box, number int) (rendered string, err error) {
+	// find the top left corner
+	x := dir.LeftMargin + (dir.ColumnWidth+dir.ColumnSep)*float64(number)
+	y := dir.BottomMargin + dir.ColumnHeight - dir.FontSize
+
+	// what is the starting position for an indented line?
+	xi := x + dir.FontSize*goldenratio
+
+	// how many lines are there?
+	count := 0
+	for _, entry := range entries {
+		count += len(entry)
+	}
+
+	// how tall must each line be to exactly fill the column?
+	// strip off the top line, divide the remaining space evenly
+	dy := -(dir.ColumnHeight - dir.FontSize) / float64(count-1)
+
+	// now walk through the entries and build each one
+	for _, entry := range entries {
+		elt := ""
+		for i, line := range entry {
+			if i == 0 {
+				elt += fmt.Sprintf("1 0 0 1 %.3f %.3f Tm\n", x, y)
+			} else {
+				elt += fmt.Sprintf("1 0 0 1 %.3f %.3f Tm\n", xi, y)
+			}
+			y += dy
+
+			// render each box with its font
+			for j, box := range line {
+				if j > 0 {
+					elt += " "
+				}
+				elt += fmt.Sprintf("/%s %.3f Tf ", box.Font.Label, dir.FontSize)
+				elt += box.Command
+			}
+
+			elt += "\n"
+		}
+
+		rendered += elt
 	}
 
 	return

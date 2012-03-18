@@ -37,7 +37,7 @@ func (elt *Ref) Render(out io.Writer, indent string) {
 }
 
 const obj_info = `<<
-  /Title (%s)
+  /Title (%s Directory)
   /Author (%s)
   /CreationDate (%s)
   /ModDate (%s)
@@ -123,7 +123,7 @@ type Directory struct {
 	LeftMargin, RightMargin     float64
 	HeaderHeight                float64
 	ColumnsPerPage, ColumnCount int
-	ColumnGap                   float64
+	ColumnSep                   float64
 	ColumnWidth, ColumnHeight   float64
 
 	Roman, Bold, Typewriter *FontMetrics
@@ -135,6 +135,7 @@ type Directory struct {
 	Columnbreaks []int
 	Lines        [][][]*Box
 	FontSize     float64
+	Columns      []string
 }
 
 func NewDirectory(title string, roman, bold, typewriter *FontMetrics) *Directory {
@@ -143,11 +144,11 @@ func NewDirectory(title string, roman, bold, typewriter *FontMetrics) *Directory
 		PageHeight:     11.0 * inch,
 		TopMargin:      .75 * inch,
 		BottomMargin:   .75 * inch,
-		LeftMargin:     .75 * inch,
-		RightMargin:    .75 * inch,
+		LeftMargin:     .5 * inch,
+		RightMargin:    .5 * inch,
 		HeaderHeight:   20.0,
 		ColumnsPerPage: 2,
-		ColumnGap:      .5 * inch,
+		ColumnSep:      10.0,
 
 		Roman:      roman,
 		Bold:       bold,
@@ -159,7 +160,7 @@ func NewDirectory(title string, roman, bold, typewriter *FontMetrics) *Directory
 	elt.ColumnWidth = elt.PageWidth
 	elt.ColumnWidth -= elt.LeftMargin
 	elt.ColumnWidth -= elt.RightMargin
-	elt.ColumnWidth -= elt.ColumnGap * float64(elt.ColumnsPerPage-1)
+	elt.ColumnWidth -= elt.ColumnSep * float64(elt.ColumnsPerPage-1)
 	elt.ColumnWidth /= float64(elt.ColumnsPerPage)
 	elt.ColumnHeight = elt.PageHeight
 	elt.ColumnHeight -= elt.TopMargin

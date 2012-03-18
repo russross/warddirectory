@@ -12,7 +12,7 @@ const (
 	fontPrefix     = "fonts"
 	romanFont      = "ptmr8a.afm"
 	boldFont       = "ptmb8a.afm"
-	typewriterFont = "cmtt8.afm"
+	typewriterFont = "pcrr8a.afm"
 )
 
 func main() {
@@ -21,14 +21,17 @@ func main() {
 	if err != nil {
 		log.Fatal("loading roman font: ", err)
 	}
+	roman.Label = "FR"
 	bold, err := parseFontMetricsFile(filepath.Join(fontPrefix, boldFont))
 	if err != nil {
 		log.Fatal("loading bold font: ", err)
 	}
+	bold.Label = "FB"
 	typewriter, err := parseFontMetricsFile(filepath.Join(fontPrefix, typewriterFont))
 	if err != nil {
 		log.Fatal("loading typewriter font: ", err)
 	}
+	typewriter.Label = "FT"
 
 	// create directory object
 	title := "Diamond Valley Second Ward"
@@ -55,36 +58,19 @@ func main() {
 		log.Fatal("splitting families into lines: ", err)
 	}
 
-	for _, family := range dir.Lines {
-		for i, line := range family {
-			if i > 0 {
-				fmt.Print("   ")
-			}
-			for _, box := range line {
-				fmt.Print(box.Command, " ")
-			}
-			fmt.Println()
-		}
-		fmt.Println()
-	}
-
 	for _, n := range dir.Columnbreaks {
 		fmt.Printf("Column break at entry %v (%v)\n", n, dir.Families[n].Surname)
 	}
 
-	//	if err = dir.simplifyBoxes(); err != nil {
-	//		log.Fatal("simplifying family entries: ", err)
-	//	}
+	// render the family listings
+	if err = dir.renderColumns(); err != nil {
+		log.Fatal("rendering columns: ", err)
+	}
 
-	//	// render the family listings
-	//	if err = dir.renderFamilies(); err != nil {
-	//		log.Fatal("rendering families: ", err)
-	//	}
-	//
-	//	// generate the PDF file
-	//	if err = dir.makePDF(); err != nil {
-	//		log.Fatal("making the PDF: ", err)
-	//	}
+	// generate the PDF file
+	if err = dir.makePDF(); err != nil {
+		log.Fatal("making the PDF: ", err)
+	}
 }
 
 func (dir *Directory) makePDF() error {
@@ -110,12 +96,20 @@ func (dir *Directory) makePDF() error {
 	bold := doc.ForwardRef(2)
 	typewriter := doc.ForwardRef(3)
 	doc.AddObject(fmt.Sprintf(obj_fontresource, roman, bold, typewriter))
-	doc.AddObject(fmt.Sprintf(obj_font, "/Times-Roman"))
-	doc.AddObject(fmt.Sprintf(obj_font, "/Times-Bold"))
-	doc.AddObject(fmt.Sprintf(obj_font, "/Courier"))
-	//doc.AddStream(obj_page_stream, []byte(makepage1()))
+	doc.AddObject(fmt.Sprintf(obj_font, "/"+dir.Roman.Name))
+	doc.AddObject(fmt.Sprintf(obj_font, "/"+dir.Bold.Name))
+	doc.AddObject(fmt.Sprintf(obj_font, "/"+dir.Typewriter.Name))
+	col := 0
+	for page := 0; page < 2; page++ {
+		text := ""
+		for i := 0; i < dir.ColumnsPerPage; i++ {
+			text += dir.Columns[col]
+			col++
+		}
+		doc.AddStream(obj_page_stream, []byte(text))
+	}
 	doc.WriteTrailer(info, catalog)
-	//doc.Dump()
+	doc.Dump()
 	return nil
 }
 
