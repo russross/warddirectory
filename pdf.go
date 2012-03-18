@@ -122,7 +122,7 @@ const obj_font_descriptor_embedded = `<<
 >>
 `
 
-const obj_page_stream = `<<
+const obj_stream = `<<
   /Length %d%s
 >>
 `

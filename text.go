@@ -113,7 +113,7 @@ func (font *FontMetrics) parseKerning(in string) error {
 	return nil
 }
 
-func parseFontMetricsFile(file string, label string) (font *FontMetrics, err error) {
+func parseFontMetricsFile(file string, label string, stemv int) (font *FontMetrics, err error) {
 	contents, err := ioutil.ReadFile(file)
 	if err != nil {
 		return
@@ -122,7 +122,7 @@ func parseFontMetricsFile(file string, label string) (font *FontMetrics, err err
 		Glyphs: make(map[string]*GlyphMetrics),
 		Lookup: make(map[int]string),
 		Label:  label,
-		StemV:  64, // no idea where to get this, but it's required
+		StemV:  stemv,
 		Flags:  1<<1 | 1<<5,
 	}
 	lines := strings.Split(string(contents), "\n")

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -9,28 +10,33 @@ import (
 )
 
 const (
-	fontPrefix       = "fonts"
-	romanFont        = "ptmr8a.afm"
-	boldFont         = "ptmb8a.afm"
-	typewriterFont   = "pcrr8a.afm"
-	ForChurchUseOnly = "For Church Use Only"
-	CompressStreams  = true
+	fontPrefix         = "fonts"
+	romanFont          = "ptmr8a.afm"
+	romanStemV         = 85
+	boldFont           = "ptmb8a.afm"
+	boldStemV          = 140
+	typewriterFont     = "cmtt10.afm"
+	typewriterFontFile = "cmtt10.pfb"
+	typewriterStemV    = 125
+	ForChurchUseOnly   = "For Church Use Only"
+	CompressStreams    = false
 )
 
 func main() {
 	// first load the fonts
-	roman, err := parseFontMetricsFile(filepath.Join(fontPrefix, romanFont), "FR")
+	roman, err := parseFontMetricsFile(filepath.Join(fontPrefix, romanFont), "FR", romanStemV)
 	if err != nil {
 		log.Fatal("loading roman font: ", err)
 	}
-	bold, err := parseFontMetricsFile(filepath.Join(fontPrefix, boldFont), "FB")
+	bold, err := parseFontMetricsFile(filepath.Join(fontPrefix, boldFont), "FB", boldStemV)
 	if err != nil {
 		log.Fatal("loading bold font: ", err)
 	}
-	typewriter, err := parseFontMetricsFile(filepath.Join(fontPrefix, typewriterFont), "FT")
+	typewriter, err := parseFontMetricsFile(filepath.Join(fontPrefix, typewriterFont), "FT", typewriterStemV)
 	if err != nil {
 		log.Fatal("loading typewriter font: ", err)
 	}
+	typewriter.Filename = filepath.Join(fontPrefix, typewriterFontFile)
 
 	// create directory object
 	title := "Diamond Valley Second Ward"
@@ -99,7 +105,7 @@ func (dir *Directory) makePDF() (err error) {
 			text += dir.Columns[col]
 			col++
 		}
-		doc.AddStream(obj_page_stream, []byte(text))
+		doc.AddStream(obj_stream, []byte(text))
 	}
 
 	i := 1
@@ -145,16 +151,37 @@ func (dir *Directory) makePDF() (err error) {
 	doc.AddObject(makeFont(dir.Roman, romanwidths, romandescriptor))
 	doc.AddObject(makeWidths(dir.Roman))
 	doc.AddObject(makeFontDescriptor(dir.Roman, romanembedded))
+	if dir.Roman.Filename != "" {
+		var font []byte
+		if font, err = ioutil.ReadFile(dir.Roman.Filename); err != nil {
+			return
+		}
+		doc.AddStream(obj_stream, font)
+	}
 
 	// bold font
 	doc.AddObject(makeFont(dir.Bold, boldwidths, bolddescriptor))
 	doc.AddObject(makeWidths(dir.Bold))
 	doc.AddObject(makeFontDescriptor(dir.Bold, boldembedded))
+	if dir.Bold.Filename != "" {
+		var font []byte
+		if font, err = ioutil.ReadFile(dir.Bold.Filename); err != nil {
+			return
+		}
+		doc.AddStream(obj_stream, font)
+	}
 
 	// typewriter font
 	doc.AddObject(makeFont(dir.Typewriter, typewriterwidths, typewriterdescriptor))
 	doc.AddObject(makeWidths(dir.Typewriter))
 	doc.AddObject(makeFontDescriptor(dir.Typewriter, typewriterembedded))
+	if dir.Typewriter.Filename != "" {
+		var font []byte
+		if font, err = ioutil.ReadFile(dir.Typewriter.Filename); err != nil {
+			return
+		}
+		doc.AddStream(obj_stream, font)
+	}
 
 	doc.WriteTrailer(info, catalog)
 	doc.Dump()
@@ -218,89 +245,3 @@ func makeFontDescriptor(font *FontMetrics, embedded string) string {
 		font.StemV,
 		embedded)
 }
-
-//func testPara() {
-//	font, err := parseFontMetricsFile("/usr/share/texmf-texlive/fonts/afm/adobe/times/ptmr8a.afm")
-//	if err != nil {
-//		fmt.Println(err)
-//		return
-//	}
-//	var words []*Box
-//	box, _ := font.MakeBox("Ross")
-//	words = append(words, box)
-//	box, _ = font.MakeBox("Russ")
-//	box.Penalty = 1
-//	words = append(words, box)
-//	box, _ = font.MakeBox("(773-5952,")
-//	box.Penalty = 1
-//	words = append(words, box)
-//	box, _ = font.MakeBox("russ@russross.com),")
-//	words = append(words, box)
-//	box, _ = font.MakeBox("Nancy")
-//	box.Penalty = 1
-//	words = append(words, box)
-//	box, _ = font.MakeBox("(773-5953,")
-//	box.Penalty = 1
-//	words = append(words, box)
-//	box, _ = font.MakeBox("nancy@nancyross.com),")
-//	words = append(words, box)
-//	box, _ = font.MakeBox("Rosie,")
-//	words = append(words, box)
-//	box, _ = font.MakeBox("Alex,")
-//	words = append(words, box)
-//	box, _ = font.MakeBox("1414 Agate Ct")
-//	words = append(words, box)
-//		
-//	dir := NewDirectory()
-//	fontsize := 10.0
-//	firstlinewidth := dir.ColumnWidth / fontsize * 1000.0
-//
-//	// we'll indent remaining lines using the golden ratio. why? because we can
-//	ratio := (1.0 + math.Sqrt(5.0)) / 2.0
-//	linewidth := firstlinewidth - fontsize * ratio / fontsize * 1000.0
-//	lines := BreakParagraph(words, firstlinewidth, linewidth, float64(font.Glyphs["space"].Width))
-//	fmt.Println(lines)
-//}
-//
-//func testFont() {
-//	font, err := parseFontMetricsFile("/usr/share/texmf-texlive/fonts/afm/adobe/times/ptmr8a.afm")
-//	if err != nil {
-//		fmt.Println(err)
-//		return
-//	}
-//	fmt.Printf("Font: %s\n", font.Name)
-//	//	for key, val := range font.Glyphs {
-//	//		fmt.Printf("%s: %v\n", key, val)
-//	//	}
-//	box, err := font.MakeBox("Yes, find me a sandwich. ")
-//	if err != nil {
-//		fmt.Println(err)
-//		return
-//	}
-//	fmt.Printf("%#v\n", box)
-//}
-//
-//func makepage1() string {
-//	return `1 0 0 1 36 727 Tm
-///FB 20 Tf
-//(Ross) Tj
-///FR 20 Tf
-//( Russ \(773-5952, ) Tj
-///FT 20 Tf
-//(russ@russross.com) Tj
-///FR 20 Tf
-//(\),) Tj
-//1 0 0 1 52 707 Tm
-//[(Nanc)15(y \(773-5953, )] TJ
-///FT 20 Tf
-//(nancy@nancyross.com) Tj
-///FR 20 Tf
-//(\), Rosie, Alex,) Tj
-//1 0 0 1 52 687 Tm
-//(1414 Agate Ct) Tj
-//1 0 0 1 52 667 Tm
-//[(Y)100(es, )<ae>(nd me a sandwich.)] TJ
-//1 0 0 1 251.08 667 Tm
-//([End])Tj
-//`
-//}
