@@ -30,11 +30,23 @@ type GlyphMetrics struct {
 }
 
 type FontMetrics struct {
-	Name      string
-	Label     string
-	CapHeight int
-	Glyphs    map[string]*GlyphMetrics
-	Lookup    map[int]string
+	Name        string
+	Label       string
+	Filename    string
+	CapHeight   int
+	Glyphs      map[string]*GlyphMetrics
+	Lookup      map[int]string
+	FirstChar   int
+	LastChar    int
+	Flags       int
+	BBoxLeft    int
+	BBoxBottom  int
+	BBoxRight   int
+	BBoxTop     int
+	ItalicAngle int
+	Ascent      int
+	Descent     int
+	StemV       int
 }
 
 type Box struct {
@@ -101,7 +113,7 @@ func (font *FontMetrics) parseKerning(in string) error {
 	return nil
 }
 
-func parseFontMetricsFile(file string) (font *FontMetrics, err error) {
+func parseFontMetricsFile(file string, label string) (font *FontMetrics, err error) {
 	contents, err := ioutil.ReadFile(file)
 	if err != nil {
 		return
@@ -109,15 +121,33 @@ func parseFontMetricsFile(file string) (font *FontMetrics, err error) {
 	font = &FontMetrics{
 		Glyphs: make(map[string]*GlyphMetrics),
 		Lookup: make(map[int]string),
+		Label:  label,
+		StemV:  64, // no idea where to get this, but it's required
+		Flags:  1<<1 | 1<<5,
 	}
 	lines := strings.Split(string(contents), "\n")
 	for i := 0; i < len(lines); i++ {
 		line := strings.TrimSpace(lines[i])
-		count := 0
+		a, b, c, d, count := 0, 0, 0, 0, 0
 		n := 0
 		s := ""
-		if n, err = fmt.Sscanf(line, "CapHeight %d", &count); n == 1 && err == nil {
-			font.CapHeight = count
+		if n, err = fmt.Sscanf(line, "CapHeight %d", &a); n == 1 && err == nil {
+			font.CapHeight = a
+		} else if n, err = fmt.Sscanf(line, "FontBBox %d %d %d %d", &a, &b, &c, &d); n == 4 && err == nil {
+			font.BBoxLeft = a
+			font.BBoxBottom = b
+			font.BBoxRight = c
+			font.BBoxTop = d
+		} else if n, err = fmt.Sscanf(line, "ItalicAngle %d", &a); n == 1 && err == nil {
+			font.ItalicAngle = a
+		} else if n, err = fmt.Sscanf(line, "Ascender %d", &a); n == 1 && err == nil {
+			font.Ascent = a
+		} else if n, err = fmt.Sscanf(line, "Descender %d", &a); n == 1 && err == nil {
+			font.Descent = a
+		} else if n, err = fmt.Sscanf(line, "IsFixedPitch %s", &s); n == 1 && err == nil {
+			if s == "true" {
+				font.Flags |= 1
+			}
 		} else if n, err = fmt.Sscanf(line, "StartCharMetrics %d", &count); n == 1 && err == nil {
 			i += 1
 			for j := 0; j < count && i < len(lines); j, i = j+1, i+1 {
@@ -167,6 +197,16 @@ func (font *FontMetrics) MakeBox(text string, spacecompress float64) (box *Box, 
 			}
 		}
 		glyphs = append(glyphs, glyph)
+
+		// record that this glyph has been used
+		if glyph.Code > 0 {
+			if font.FirstChar == 0 || glyph.Code < font.FirstChar {
+				font.FirstChar = glyph.Code
+			}
+			if font.LastChar == 0 || glyph.Code > font.LastChar {
+				font.LastChar = glyph.Code
+			}
+		}
 	}
 
 	// now compute the total width, including kerning

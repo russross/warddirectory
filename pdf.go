@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"compress/zlib"
 	"fmt"
 	"io"
 	"math"
@@ -87,23 +88,42 @@ const obj_font = `<<
   /Type /Font
   /Subtype /Type1
   /BaseFont %s
-  /Encoding <<
-	/Type /Encoding
-	/Differences [
-		128 /fi
-	]
-  >>
+  /FirstChar %d
+  /LastChar %d
+  /Widths %s
+  /FontDescriptor %s
+>>
+`
+
+const obj_font_descriptor = `<<
+  /Type /FontDescriptor
+  /FontName %s
+  /Flags %d
+  /FontBBox [%d %d %d %d]
+  /ItalicAngle %d
+  /Ascent %d
+  /Descent %d
+  /CapHeight %d
+  /StemV %d
+>>
+`
+
+const obj_font_descriptor_embedded = `<<
+  /Type /FontDescriptor
+  /FontName %s
+  /Flags %d
+  /FontBBox [%d %d %d %d]
+  /ItalicAngle %d
+  /Ascent %d
+  /Descent %d
+  /CapHeight %d
+  /StemV %d
+  /FontFile %s
 >>
 `
 
 const obj_page_stream = `<<
-  /Length %d
->>
-`
-
-const obj_page_stream_flate = `<<
-  /Length %d
-  /Filter /FlateDecode
+  /Length %d%s
 >>
 `
 
@@ -201,10 +221,28 @@ func (elt *Document) AddObject(object string) (ref string) {
 }
 
 func (elt *Document) AddStream(object string, stream []byte) (ref string) {
+	flate := ""
+	if CompressStreams {
+		flate = "\n  /Filter /FlateDecode"
+		var compressed bytes.Buffer
+		var writer *zlib.Writer
+		var err error
+		if writer, err = zlib.NewWriterLevel(&compressed, zlib.BestCompression); err != nil {
+			panic(fmt.Sprint("Setting up zlip compressor: ", err))
+		}
+		if _, err = writer.Write(stream); err != nil {
+			panic(fmt.Sprint("Writing to zlip compressor: ", err))
+		}
+		if err = writer.Close(); err != nil {
+			panic(fmt.Sprint("Closing zlip compressor: ", err))
+		}
+		stream = compressed.Bytes()
+	}
+
 	offset := Offset(len(elt.out.Bytes()))
 	ref = elt.ForwardRef(0)
 	elt.Xref = append(elt.Xref, offset)
-	fmt.Fprintf(elt.out, "%d 0 obj\n%s", len(elt.Xref), fmt.Sprintf(object, len(stream)))
+	fmt.Fprintf(elt.out, "%d 0 obj\n%s", len(elt.Xref), fmt.Sprintf(object, len(stream), flate))
 	fmt.Fprint(elt.out, "stream\n")
 	elt.out.Write(stream)
 	fmt.Fprint(elt.out, "endstream\n")

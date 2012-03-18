@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"compress/zlib"
 	"fmt"
 	"log"
 	"os"
@@ -16,26 +14,23 @@ const (
 	boldFont         = "ptmb8a.afm"
 	typewriterFont   = "pcrr8a.afm"
 	ForChurchUseOnly = "For Church Use Only"
-	CompressStreams  = false
+	CompressStreams  = true
 )
 
 func main() {
 	// first load the fonts
-	roman, err := parseFontMetricsFile(filepath.Join(fontPrefix, romanFont))
+	roman, err := parseFontMetricsFile(filepath.Join(fontPrefix, romanFont), "FR")
 	if err != nil {
 		log.Fatal("loading roman font: ", err)
 	}
-	roman.Label = "FR"
-	bold, err := parseFontMetricsFile(filepath.Join(fontPrefix, boldFont))
+	bold, err := parseFontMetricsFile(filepath.Join(fontPrefix, boldFont), "FB")
 	if err != nil {
 		log.Fatal("loading bold font: ", err)
 	}
-	bold.Label = "FB"
-	typewriter, err := parseFontMetricsFile(filepath.Join(fontPrefix, typewriterFont))
+	typewriter, err := parseFontMetricsFile(filepath.Join(fontPrefix, typewriterFont), "FT")
 	if err != nil {
 		log.Fatal("loading typewriter font: ", err)
 	}
-	typewriter.Label = "FT"
 
 	// create directory object
 	title := "Diamond Valley Second Ward"
@@ -89,19 +84,14 @@ func (dir *Directory) makePDF() (err error) {
 	catalog := doc.AddObject(fmt.Sprintf(obj_catalog, pages))
 	page1 := doc.ForwardRef(1)
 	page2 := doc.ForwardRef(2)
-	fontResource := doc.ForwardRef(3)
-	page1Contents := doc.ForwardRef(7)
-	page2Contents := doc.ForwardRef(8)
+	page1Contents := doc.ForwardRef(3)
+	page2Contents := doc.ForwardRef(4)
+	fontResource := doc.ForwardRef(5)
 	doc.AddObject(fmt.Sprintf(obj_pages, page1, page2))
 	doc.AddObject(fmt.Sprintf(obj_page, pages, fontResource, page1Contents))
 	doc.AddObject(fmt.Sprintf(obj_page, pages, fontResource, page2Contents))
-	roman := doc.ForwardRef(1)
-	bold := doc.ForwardRef(2)
-	typewriter := doc.ForwardRef(3)
-	doc.AddObject(fmt.Sprintf(obj_fontresource, roman, bold, typewriter))
-	doc.AddObject(fmt.Sprintf(obj_font, "/"+dir.Roman.Name))
-	doc.AddObject(fmt.Sprintf(obj_font, "/"+dir.Bold.Name))
-	doc.AddObject(fmt.Sprintf(obj_font, "/"+dir.Typewriter.Name))
+
+	// pages
 	col := 0
 	for page := 0; page < 2; page++ {
 		text := dir.Header
@@ -109,26 +99,124 @@ func (dir *Directory) makePDF() (err error) {
 			text += dir.Columns[col]
 			col++
 		}
-		if CompressStreams {
-			var compressed bytes.Buffer
-			var writer *zlib.Writer
-			if writer, err = zlib.NewWriterLevel(&compressed, zlib.BestCompression); err != nil {
-				return
-			}
-			if _, err = writer.Write([]byte(text)); err != nil {
-				return
-			}
-			if err = writer.Close(); err != nil {
-				return
-			}
-			doc.AddStream(obj_page_stream_flate, compressed.Bytes())
-		} else {
-			doc.AddStream(obj_page_stream, []byte(text))
-		}
+		doc.AddStream(obj_page_stream, []byte(text))
 	}
+
+	i := 1
+	roman := doc.ForwardRef(i)
+	i++
+	romanwidths := doc.ForwardRef(i)
+	i++
+	romandescriptor := doc.ForwardRef(i)
+	i++
+	romanembedded := ""
+	if dir.Roman.Filename != "" {
+		romanembedded = doc.ForwardRef(i)
+		i++
+	}
+
+	bold := doc.ForwardRef(i)
+	i++
+	boldwidths := doc.ForwardRef(i)
+	i++
+	bolddescriptor := doc.ForwardRef(i)
+	i++
+	boldembedded := ""
+	if dir.Bold.Filename != "" {
+		boldembedded = doc.ForwardRef(i)
+		i++
+	}
+
+	typewriter := doc.ForwardRef(i)
+	i++
+	typewriterwidths := doc.ForwardRef(i)
+	i++
+	typewriterdescriptor := doc.ForwardRef(i)
+	i++
+	typewriterembedded := ""
+	if dir.Typewriter.Filename != "" {
+		typewriterembedded = doc.ForwardRef(i)
+		i++
+	}
+
+	doc.AddObject(fmt.Sprintf(obj_fontresource, roman, bold, typewriter))
+
+	// roman font
+	doc.AddObject(makeFont(dir.Roman, romanwidths, romandescriptor))
+	doc.AddObject(makeWidths(dir.Roman))
+	doc.AddObject(makeFontDescriptor(dir.Roman, romanembedded))
+
+	// bold font
+	doc.AddObject(makeFont(dir.Bold, boldwidths, bolddescriptor))
+	doc.AddObject(makeWidths(dir.Bold))
+	doc.AddObject(makeFontDescriptor(dir.Bold, boldembedded))
+
+	// typewriter font
+	doc.AddObject(makeFont(dir.Typewriter, typewriterwidths, typewriterdescriptor))
+	doc.AddObject(makeWidths(dir.Typewriter))
+	doc.AddObject(makeFontDescriptor(dir.Typewriter, typewriterembedded))
+
 	doc.WriteTrailer(info, catalog)
 	doc.Dump()
 	return nil
+}
+
+func makeFont(font *FontMetrics, widths, descriptor string) string {
+	return fmt.Sprintf(obj_font,
+		"/"+font.Name,
+		font.FirstChar,
+		font.LastChar,
+		widths,
+		descriptor)
+}
+
+func makeWidths(font *FontMetrics) string {
+	widths := "["
+	for n := font.FirstChar; n <= font.LastChar; n++ {
+		if n%16 == 0 {
+			widths += "\n  "
+		} else {
+			widths += " "
+		}
+		if glyph, present := font.Lookup[n]; present {
+			widths += fmt.Sprintf("%d", font.Glyphs[glyph].Width)
+		} else {
+			widths += "0"
+		}
+	}
+	widths += "\n]\n"
+	return widths
+}
+
+func makeFontDescriptor(font *FontMetrics, embedded string) string {
+	if embedded == "" {
+		// built in font
+		return fmt.Sprintf(obj_font_descriptor,
+			"/"+font.Name,
+			font.Flags,
+			font.BBoxLeft,
+			font.BBoxBottom,
+			font.BBoxRight,
+			font.BBoxTop,
+			font.ItalicAngle,
+			font.Ascent,
+			font.Descent,
+			font.CapHeight,
+			font.StemV)
+	}
+	return fmt.Sprintf(obj_font_descriptor_embedded,
+		"/"+font.Name,
+		font.Flags,
+		font.BBoxLeft,
+		font.BBoxBottom,
+		font.BBoxRight,
+		font.BBoxTop,
+		font.ItalicAngle,
+		font.Ascent,
+		font.Descent,
+		font.CapHeight,
+		font.StemV,
+		embedded)
 }
 
 //func testPara() {
