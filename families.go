@@ -300,7 +300,7 @@ func (dir *Directory) formatFamilies() (err error) {
 		for i, word := range strings.Fields(family.Surname) {
 			space := 0
 
-			// strong discourage line breaks within a surname
+			// strongly discourage line breaks within a surname
 			if i > 0 {
 				space = 2
 			}

@@ -122,8 +122,16 @@ const obj_font_descriptor_embedded = `<<
 >>
 `
 
-const obj_stream = `<<
+const obj_page_stream = `<<
   /Length %d%s
+>>
+`
+
+const obj_font_stream = `<<
+  /Length1 %d
+  /Length2 %d
+  /Length3 %d
+  /Length %%d%%s
 >>
 `
 
@@ -135,7 +143,7 @@ const obj_trailer = `trailer
 >>
 startxref
 %d
-%%EOF
+%%%%EOF
 `
 
 const (
@@ -228,13 +236,13 @@ func (elt *Document) AddStream(object string, stream []byte) (ref string) {
 		var writer *zlib.Writer
 		var err error
 		if writer, err = zlib.NewWriterLevel(&compressed, zlib.BestCompression); err != nil {
-			panic(fmt.Sprint("Setting up zlip compressor: ", err))
+			panic(fmt.Sprint("Setting up zlib compressor: ", err))
 		}
 		if _, err = writer.Write(stream); err != nil {
-			panic(fmt.Sprint("Writing to zlip compressor: ", err))
+			panic(fmt.Sprint("Writing to zlib compressor: ", err))
 		}
 		if err = writer.Close(); err != nil {
-			panic(fmt.Sprint("Closing zlip compressor: ", err))
+			panic(fmt.Sprint("Closing zlib compressor: ", err))
 		}
 		stream = compressed.Bytes()
 	}

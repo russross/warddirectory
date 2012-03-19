@@ -20,7 +20,7 @@ const (
 	typewriterStemV    = 125
 	ForChurchUseOnly   = "For Church Use Only"
 	CompressStreams    = true
-	// typewriterFont     = "pcrr8a.afm"
+	//typewriterFont     = "pcrr8a.afm"
 )
 
 func main() {
@@ -106,7 +106,7 @@ func (dir *Directory) makePDF() (err error) {
 			text += dir.Columns[col]
 			col++
 		}
-		doc.AddStream(obj_stream, []byte(text))
+		doc.AddStream(obj_page_stream, []byte(text))
 	}
 
 	i := 1
@@ -157,7 +157,7 @@ func (dir *Directory) makePDF() (err error) {
 		if font, err = ioutil.ReadFile(dir.Roman.Filename); err != nil {
 			return
 		}
-		doc.AddStream(obj_stream, font)
+		doc.AddStream(fmt.Sprintf(obj_font_stream, len(font), 0, 0), font)
 	}
 
 	// bold font
@@ -169,7 +169,7 @@ func (dir *Directory) makePDF() (err error) {
 		if font, err = ioutil.ReadFile(dir.Bold.Filename); err != nil {
 			return
 		}
-		doc.AddStream(obj_stream, font)
+		doc.AddStream(fmt.Sprintf(obj_font_stream, len(font), 0, 0), font)
 	}
 
 	// typewriter font
@@ -181,7 +181,7 @@ func (dir *Directory) makePDF() (err error) {
 		if font, err = ioutil.ReadFile(dir.Typewriter.Filename); err != nil {
 			return
 		}
-		doc.AddStream(obj_stream, font)
+		doc.AddStream(fmt.Sprintf(obj_font_stream, len(font), 0, 0), font)
 	}
 
 	doc.WriteTrailer(info, catalog)
