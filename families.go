@@ -2,13 +2,6 @@
 // Make a printable ward directory
 // from the data downloaded from the lds.org directory
 //
-// Input is from stdin, output goes to stdout
-//
-// This script produces a list of families,
-// which is embedded in the directory.tex LaTeX file.
-// The accompanying resize.py script finds the right
-// font size to squeeze it all onto a single 2-sided sheet.
-//
 // by Russ Ross <russ@russross.com>
 // idea and formatting details taken from
 // similar work by Richard Ross
@@ -60,7 +53,7 @@ var ADDRESS_RE = regexp.MustCompile(
 		strings.Join(STATES, "|") +
 		`)?\s*([\d-]+)?$`)
 
-// list of uniform-length slices
+// sortable list
 type familyList []*Family
 
 func (lst familyList) Len() int {
@@ -106,10 +99,6 @@ var headerFields = []string{
 
 func prepStreet(street string) string {
 	// insert cleanups and abbreviations here
-
-	// escape # for LaTeX
-	street = strings.Replace(street, "#", "\\#", -1)
-
 	return street
 }
 
