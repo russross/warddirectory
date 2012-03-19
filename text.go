@@ -9,11 +9,7 @@ import (
 	"time"
 )
 
-// The minimum allowed space size as a fraction of the normal size
-const MinSpaceSize = .85
-const MinLineHeight = .95
-const Leading = 1.2
-
+// metrics for a single glyph from a font
 type GlyphMetrics struct {
 	Code       int
 	Width      int
@@ -26,6 +22,7 @@ type GlyphMetrics struct {
 	Kerning    map[string]int
 }
 
+// metrics for an entire font
 type FontMetrics struct {
 	Name        string
 	Label       string
@@ -46,6 +43,7 @@ type FontMetrics struct {
 	StemV       int
 }
 
+// a single chunk of text made up of glyphs
 type Box struct {
 	Font     *FontMetrics
 	Original string
@@ -55,6 +53,7 @@ type Box struct {
 	Penalty  int
 }
 
+// parse a single glyph metric line from a .afm file
 func (font *FontMetrics) parseGlyph(in string) error {
 	// sample: C 102 ; WX 333 ; N f ; B 20 0 383 683 ; L i fi ; L l fl ;
 	glyph := &GlyphMetrics{Ligatures: make(map[string]string), Kerning: make(map[string]int)}
@@ -93,6 +92,7 @@ func (font *FontMetrics) parseGlyph(in string) error {
 	return nil
 }
 
+// parse a single glyph kerning line from a .afm file
 func (font *FontMetrics) parseKerning(in string) error {
 	// sample: KPX f i -20
 	var a int
@@ -110,6 +110,7 @@ func (font *FontMetrics) parseKerning(in string) error {
 	return nil
 }
 
+// parse and entire .afm file
 func parseFontMetricsFile(file string, label string, stemv int) (font *FontMetrics, err error) {
 	contents, err := ioutil.ReadFile(file)
 	if err != nil {
@@ -174,6 +175,9 @@ func parseFontMetricsFile(file string, label string, stemv int) (font *FontMetri
 	return
 }
 
+// given a string, render it into PDF syntax using font metric data
+// this also computes the width of the box in units equal to 1/1000th of a point
+// if spacecompress != 1.0, space widths are adjusted by the given factor
 func (font *FontMetrics) MakeBox(text string, spacecompress float64) (box *Box, err error) {
 	// find the list of glyphs, merging ligatures when possible
 	var glyphs []*GlyphMetrics
@@ -281,15 +285,30 @@ func (font *FontMetrics) MakeBox(text string, spacecompress float64) (box *Box, 
 	return
 }
 
+// same as MakeBox, but panic in the event of an error
+// useful in later passes, when all the text has already passed through MakeBox once
+func (font *FontMetrics) MustMakeBox(text string, spacecompress float64) *Box {
+	box, err := font.MakeBox(text, spacecompress)
+	if err != nil {
+		panic(err)
+	}
+	return box
+}
+
+type Breakable interface {
+	Len() int
+	Cost(a, b int, first, last bool) float64
+}
+
 type breakpoint struct {
 	cost     float64 // best total cost of breaking this chunk
 	nextline int     // start of next line
 }
 
-func BreakParagraph(words []*Box, firstlinewidth, linewidth, spacesize float64) (startofeachline []int) {
+func Break(sequence Breakable) (startofeachchunk []int) {
 	// the matrix of costs:
-	//   matrix[from][to] = cost of breaking words[from:to+1]
-	dim := len(words)
+	//   matrix[from][to] = cost of breaking slice[from:to+1]
+	dim := sequence.Len()
 	backing := make([]breakpoint, dim*dim)
 	matrix := make([][]breakpoint, dim)
 	for i := 0; i < dim; i++ {
@@ -301,11 +320,7 @@ func BreakParagraph(words []*Box, firstlinewidth, linewidth, spacesize float64) 
 			// best = min(cost(from, i) + cost(i+1, to))
 			matrix[from][to] = breakpoint{math.Inf(1), -1}
 			for i := from; i <= to; i++ {
-				width := linewidth
-				if from == 0 {
-					width = firstlinewidth
-				}
-				cost := LineCost(width, spacesize, words[from:i+1], i+1 == dim)
+				cost := sequence.Cost(from, i+1, from == 0, i+1 == dim)
 				if i+1 <= to {
 					cost += matrix[i+1][to].cost
 				}
@@ -316,18 +331,31 @@ func BreakParagraph(words []*Box, firstlinewidth, linewidth, spacesize float64) 
 		}
 	}
 
-	if math.IsInf(matrix[0][dim-1].cost, 1) || len(words) == 0 {
+	if math.IsInf(matrix[0][dim-1].cost, 1) || dim == 0 {
 		return nil
 	}
 
-	startofeachline = nil
+	startofeachchunk = nil
 	for nextline := 0; nextline < dim; nextline = matrix[nextline][dim-1].nextline {
-		startofeachline = append(startofeachline, nextline)
+		startofeachchunk = append(startofeachchunk, nextline)
 	}
 	return
 }
 
-func LineCost(width, spacesize float64, words []*Box, lastline bool) (cost float64) {
+type BoxSlice struct {
+	Boxes          []*Box
+	FirstLineWidth float64
+	LineWidth      float64
+	SpaceSize      float64
+}
+
+func (elt *BoxSlice) Len() int {
+	return len(elt.Boxes)
+}
+
+func (elt *BoxSlice) Cost(a, b int, first, last bool) float64 {
+	words := elt.Boxes[a:b]
+
 	// no space after the end of this sequence of words?
 	if words[len(words)-1].JoinNext {
 		return math.Inf(1)
@@ -335,18 +363,23 @@ func LineCost(width, spacesize float64, words []*Box, lastline bool) (cost float
 
 	// see if the line fits
 	var spaces float64
+	var cost float64
 	for i, box := range words {
 		cost += float64(box.Width)
 		if !box.JoinNext && i+1 < len(words) {
 			spaces += 1.0
 		}
 	}
-	maxwidth := cost + spaces*spacesize
-	minwidth := cost + spaces*spacesize*MinSpaceSize
+	maxwidth := cost + spaces*elt.SpaceSize
+	minwidth := cost + spaces*elt.SpaceSize*MinSpaceSize
 
 	// if we prefer not to break here, then the penalty is the
 	// same as a completely blank line
-	penalty := width / spacesize
+	width := elt.LineWidth
+	if first {
+		width = elt.FirstLineWidth
+	}
+	penalty := width / elt.SpaceSize
 	penalty = penalty * penalty * float64(words[len(words)-1].Penalty)
 
 	switch {
@@ -356,10 +389,10 @@ func LineCost(width, spacesize float64, words []*Box, lastline bool) (cost float
 
 	// easy fit
 	case maxwidth <= width:
-		excess := (width - maxwidth) / spacesize
+		excess := (width - maxwidth) / elt.SpaceSize
 
 		// no penalty for trailing spaces on the last line
-		if lastline {
+		if last {
 			//excess = 0.0
 		}
 
@@ -367,50 +400,24 @@ func LineCost(width, spacesize float64, words []*Box, lastline bool) (cost float
 
 	// squished fit
 	default:
-		squish := (maxwidth - width) / spacesize
+		squish := (maxwidth - width) / elt.SpaceSize
 		return squish*squish*squish + penalty
 	}
 	panic("Can't get here")
 }
 
-func BreakColumns(entries [][]int, columnheight float64) (startofeachcolumn []int) {
-	// the matrix of costs:
-	//   matrix[from][to] = cost of breaking entries[from:to+1]
-	dim := len(entries)
-	backing := make([]breakpoint, dim*dim)
-	matrix := make([][]breakpoint, dim)
-	for i := 0; i < dim; i++ {
-		matrix[i] = backing[i*dim : (i+1)*dim]
-	}
-
-	for from := dim - 1; from >= 0; from-- {
-		for to := dim - 1; to >= from; to-- {
-			// best = min(cost(from, i) + cost(i+1, to))
-			matrix[from][to] = breakpoint{math.Inf(1), -1}
-			for i := from; i <= to; i++ {
-				cost := ColumnCost(columnheight, entries[from:i+1])
-				if i+1 <= to {
-					cost += matrix[i+1][to].cost
-				}
-				if cost < matrix[from][to].cost {
-					matrix[from][to] = breakpoint{cost, i + 1}
-				}
-			}
-		}
-	}
-
-	if math.IsInf(matrix[0][dim-1].cost, 1) || len(entries) == 0 {
-		return nil
-	}
-
-	startofeachcolumn = nil
-	for nextline := 0; nextline < dim; nextline = matrix[nextline][dim-1].nextline {
-		startofeachcolumn = append(startofeachcolumn, nextline)
-	}
-	return
+type EntrySlice struct {
+	Entries      [][]int
+	ColumnHeight float64
 }
 
-func ColumnCost(columnheight float64, entries [][]int) float64 {
+func (elt *EntrySlice) Len() int {
+	return len(elt.Entries)
+}
+
+func (elt *EntrySlice) Cost(a, b int, first, last bool) float64 {
+	entries := elt.Entries[a:b]
+
 	// count up the number of lines
 	count := 0
 	for _, entry := range entries {
@@ -418,14 +425,14 @@ func ColumnCost(columnheight float64, entries [][]int) float64 {
 	}
 
 	// units are normalized to one line per 1000 columnheight units
-	squeeze := ((columnheight / 1000.0) - 1.0) / (float64(count-1) * Leading)
+	squeeze := ((elt.ColumnHeight / 1000.0) - 1.0) / (float64(count-1) * Leading)
 
 	// forbid squeezing too much
 	if squeeze < MinLineHeight {
 		return math.Inf(1)
 	}
 
-	extralines := ((columnheight / 1000.0) - 1.0) - (float64(count-1) * Leading)
+	extralines := ((elt.ColumnHeight / 1000.0) - 1.0) - (float64(count-1) * Leading)
 
 	// squishing is worse than stretching
 	if extralines < 0 {
@@ -436,9 +443,9 @@ func ColumnCost(columnheight float64, entries [][]int) float64 {
 	return extralines * extralines
 }
 
-func (dir *Directory) splitIntoLines() (err error) {
+func (dir *Directory) splitIntoLines() {
 	firstlinewidth := dir.ColumnWidth * 1000.0 / dir.FontSize
-	linewidth := firstlinewidth - goldenratio*1000.0
+	linewidth := firstlinewidth - GoldenRatio*1000.0
 	for i, entry := range dir.Entries {
 		var newentry [][]*Box
 		breaks := dir.Linebreaks[i]
@@ -455,21 +462,16 @@ func (dir *Directory) splitIntoLines() (err error) {
 				width = linewidth
 			}
 
-			if line, err = dir.simplifyLine(line, width); err != nil {
-				return
-			}
-
+			line = dir.simplifyLine(line, width)
 			newentry = append(newentry, line)
 		}
 
 		dir.Lines = append(dir.Lines, newentry)
 	}
-
-	return
 }
 
 // insert explicit spaces into a line
-func (dir *Directory) simplifyLine(boxes []*Box, linewidth float64) (simple []*Box, err error) {
+func (dir *Directory) simplifyLine(boxes []*Box, linewidth float64) (simple []*Box) {
 	// count up the spaces and the total line width
 	var width, spaces float64
 	for i, box := range boxes {
@@ -507,52 +509,40 @@ func (dir *Directory) simplifyLine(boxes []*Box, linewidth float64) (simple []*B
 		// simple merger
 		case box.JoinNext:
 			join := next.JoinNext
-			if boxes[i+1], err = box.Font.MakeBox(box.Original+next.Original, spacefactor); err != nil {
-				return
-			}
+			boxes[i+1] = box.Font.MustMakeBox(box.Original+next.Original, spacefactor)
 			boxes[i+1].JoinNext = join
 
 		// same font with a space between
 		case box.Font == next.Font:
 			join := next.JoinNext
-			if boxes[i+1], err = box.Font.MakeBox(box.Original+" "+next.Original, spacefactor); err != nil {
-				return
-			}
+			boxes[i+1] = box.Font.MustMakeBox(box.Original+" "+next.Original, spacefactor)
 			boxes[i+1].JoinNext = join
 
 		// roman followed by anything
 		case box.Font == dir.Roman:
 			join := box.JoinNext
-			if box, err = box.Font.MakeBox(box.Original+" ", spacefactor); err != nil {
-				return
-			}
+			box = box.Font.MustMakeBox(box.Original+" ", spacefactor)
 			box.JoinNext = join
 			simple = append(simple, box)
 
 		// anything followed by roman
 		case next.Font == dir.Roman:
 			join := next.JoinNext
-			if boxes[i+1], err = next.Font.MakeBox(" "+next.Original, spacefactor); err != nil {
-				return
-			}
+			boxes[i+1] = next.Font.MustMakeBox(" "+next.Original, spacefactor)
 			boxes[i+1].JoinNext = join
 			simple = append(simple, box)
 
 		// bold followed by anything
 		case box.Font == dir.Bold:
 			join := box.JoinNext
-			if box, err = box.Font.MakeBox(box.Original+" ", spacefactor); err != nil {
-				return
-			}
+			box = box.Font.MustMakeBox(box.Original+" ", spacefactor)
 			box.JoinNext = join
 			simple = append(simple, box)
 
 		// anything followed by bold
 		case next.Font == dir.Bold:
 			join := next.JoinNext
-			if boxes[i+1], err = next.Font.MakeBox(" "+next.Original, spacefactor); err != nil {
-				return
-			}
+			boxes[i+1] = next.Font.MustMakeBox(" "+next.Original, spacefactor)
 			boxes[i+1].JoinNext = join
 			simple = append(simple, box)
 
@@ -564,7 +554,7 @@ func (dir *Directory) simplifyLine(boxes []*Box, linewidth float64) (simple []*B
 	return
 }
 
-func (dir *Directory) renderColumns() (err error) {
+func (dir *Directory) renderColumns() {
 	// split the list of entries into columns
 	for i, start := range dir.Columnbreaks {
 		var column [][][]*Box
@@ -574,24 +564,18 @@ func (dir *Directory) renderColumns() (err error) {
 			column = dir.Lines[start:]
 		}
 
-		var text string
-		if text, err = dir.renderColumn(column, i%dir.ColumnsPerPage); err != nil {
-			return
-		}
-
+		text := dir.renderColumn(column, i%dir.ColumnsPerPage)
 		dir.Columns = append(dir.Columns, text)
 	}
-
-	return
 }
 
-func (dir *Directory) renderColumn(entries [][][]*Box, number int) (rendered string, err error) {
+func (dir *Directory) renderColumn(entries [][][]*Box, number int) string {
 	// find the top left corner
 	x := dir.LeftMargin + (dir.ColumnWidth+dir.ColumnSep)*float64(number)
 	y := dir.BottomMargin + dir.ColumnHeight - dir.FontSize
 
 	// what is the starting position for an indented line?
-	xi := x + dir.FontSize*goldenratio
+	xi := x + dir.FontSize*GoldenRatio
 
 	// how many lines are there?
 	count := 0
@@ -601,10 +585,10 @@ func (dir *Directory) renderColumn(entries [][][]*Box, number int) (rendered str
 
 	// how tall must each line be to exactly fill the column?
 	// strip off the top line, divide the remaining space evenly
-	dy := -(dir.ColumnHeight - dir.FontSize) / float64(count-1)
+	dy := (dir.ColumnHeight - dir.FontSize) / float64(count-1)
 
 	// now walk through the entries and build each one
-	rendered = "BT\n"
+	rendered := "BT\n"
 	for _, entry := range entries {
 		elt := ""
 		for i, line := range entry {
@@ -613,7 +597,7 @@ func (dir *Directory) renderColumn(entries [][][]*Box, number int) (rendered str
 			} else {
 				elt += fmt.Sprintf("1 0 0 1 %.3f %.3f Tm\n", xi, y)
 			}
-			y += dy
+			y -= dy
 
 			// render each box with its font
 			for j, box := range line {
@@ -631,7 +615,7 @@ func (dir *Directory) renderColumn(entries [][][]*Box, number int) (rendered str
 	}
 	rendered += "ET\n"
 
-	return
+	return rendered
 }
 
 func (dir *Directory) renderHeader() (err error) {

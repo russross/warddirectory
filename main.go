@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math"
 	"os"
 	"path/filepath"
 	"time"
@@ -21,7 +22,22 @@ const (
 	ForChurchUseOnly   = "For Church Use Only"
 	CompressStreams    = true
 	//typewriterFont     = "pcrr8a.afm"
+
+	inch            float64 = 72.0
+	MinimumFontSize float64 = 4.0
+	MaximumFontSize float64 = 18.0
+
+	// The minimum allowed space size as a fraction of the normal size
+	MinSpaceSize  float64 = .85
+	MinLineHeight float64 = .95
+	Leading       float64 = 1.2
+
+	// find best font size to this precision
+	FontSizeTolerance float64 = 0.001
 )
+
+var TitleFontMultiplier float64 = math.Sqrt(2.0)
+var GoldenRatio float64 = (1.0 + math.Sqrt(5.0)) / 2.0
 
 func main() {
 	// first load the fonts
@@ -58,14 +74,9 @@ func main() {
 		log.Fatal("finding font size: ", err)
 	}
 
-	if err = dir.splitIntoLines(); err != nil {
-		log.Fatal("splitting families into lines: ", err)
-	}
-
 	// render the family listings
-	if err = dir.renderColumns(); err != nil {
-		log.Fatal("rendering columns: ", err)
-	}
+	dir.splitIntoLines()
+	dir.renderColumns()
 
 	// render the header
 	if err = dir.renderHeader(); err != nil {

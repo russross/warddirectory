@@ -5,7 +5,6 @@ import (
 	"compress/zlib"
 	"fmt"
 	"io"
-	"math"
 )
 
 type Value interface {
@@ -154,14 +153,6 @@ startxref
 %%%%EOF
 `
 
-const (
-	inch            float64 = 72.0
-	MinimumFontSize float64 = 4.0
-	MaximumFontSize float64 = 18.0
-)
-
-var TitleFontMultiplier float64 = math.Sqrt(2.0)
-
 type Directory struct {
 	PageWidth, PageHeight       float64
 	TopMargin, BottomMargin     float64
@@ -213,12 +204,10 @@ func NewDirectory(title string, roman, bold, typewriter *FontMetrics) *Directory
 	return elt
 }
 
-type Offset uint
-
 type Document struct {
 	out     *bytes.Buffer
-	Xref    []Offset
-	Trailer Offset
+	Xref    []int
+	Trailer int
 }
 
 func NewDocument() *Document {
@@ -228,7 +217,7 @@ func NewDocument() *Document {
 }
 
 func (elt *Document) AddObject(object string) (ref string) {
-	offset := Offset(len(elt.out.Bytes()))
+	offset := len(elt.out.Bytes())
 	ref = elt.ForwardRef(0)
 	elt.Xref = append(elt.Xref, offset)
 	fmt.Fprintf(elt.out, "%d 0 obj\n%s", len(elt.Xref), object)
@@ -255,7 +244,7 @@ func (elt *Document) AddStream(object string, stream []byte) (ref string) {
 		stream = compressed.Bytes()
 	}
 
-	offset := Offset(len(elt.out.Bytes()))
+	offset := len(elt.out.Bytes())
 	ref = elt.ForwardRef(0)
 	elt.Xref = append(elt.Xref, offset)
 	fmt.Fprintf(elt.out, "%d 0 obj\n%s", len(elt.Xref), fmt.Sprintf(object, len(stream), flate))
@@ -271,7 +260,7 @@ func (elt *Document) ForwardRef(inc int) (ref string) {
 }
 
 func (elt *Document) WriteTrailer(info, catalog string) {
-	startxref := Offset(len(elt.out.Bytes()))
+	startxref := len(elt.out.Bytes())
 	fmt.Fprintf(elt.out, "xref\n0 %d\n0000000000 65535 f \n", len(elt.Xref)+1)
 	for _, offset := range elt.Xref {
 		fmt.Fprintf(elt.out, "%010d 00000 n \n", offset)

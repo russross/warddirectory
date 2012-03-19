@@ -2,12 +2,7 @@ package main
 
 import (
 	"errors"
-	"math"
 )
-
-const tolerance float64 = 0.01
-
-var goldenratio float64 = (1.0 + math.Sqrt(5.0)) / 2.0
 
 func (dir *Directory) findFontSize() (err error) {
 	low, high := MinimumFontSize, MaximumFontSize
@@ -25,19 +20,29 @@ func (dir *Directory) findFontSize() (err error) {
 		// this is in font units, which are 1000ths of a point
 		// adjusted for the font size
 		firstlinewidth := dir.ColumnWidth * 1000.0 / dir.FontSize
-		linewidth := firstlinewidth - goldenratio*1000.0
+		linewidth := firstlinewidth - GoldenRatio*1000.0
 		spacesize := float64(dir.Roman.Glyphs["space"].Width)
 		columnheight := dir.ColumnHeight * 1000.0 / dir.FontSize
 
 		// do line breaking
 		dir.Linebreaks = nil
+		breaklines := &BoxSlice{
+			FirstLineWidth: firstlinewidth,
+			LineWidth:      linewidth,
+			SpaceSize:      spacesize,
+		}
 		for _, entry := range dir.Entries {
-			breaks := BreakParagraph(entry, firstlinewidth, linewidth, spacesize)
+			breaklines.Boxes = entry
+			breaks := Break(breaklines)
 			dir.Linebreaks = append(dir.Linebreaks, breaks)
 		}
 
 		// do column breaking
-		dir.Columnbreaks = BreakColumns(dir.Linebreaks, columnheight)
+		breakentries := &EntrySlice{
+			Entries:      dir.Linebreaks,
+			ColumnHeight: columnheight,
+		}
+		dir.Columnbreaks = Break(breakentries)
 
 		if finalrun {
 			break
@@ -52,7 +57,7 @@ func (dir *Directory) findFontSize() (err error) {
 		}
 
 		// are we finished?
-		if high-low < tolerance {
+		if high-low < FontSizeTolerance {
 			if low == dir.FontSize {
 				break
 			}
