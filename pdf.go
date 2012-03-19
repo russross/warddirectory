@@ -4,38 +4,7 @@ import (
 	"bytes"
 	"compress/zlib"
 	"fmt"
-	"io"
 )
-
-type Value interface {
-	Render(out io.Writer, indent string)
-}
-
-type Object map[string]Value
-
-func (elt Object) Render(out io.Writer, indent string) {
-	fmt.Fprintln(out, "<<")
-	for key, val := range elt {
-		fmt.Fprintln(out, "/%s ", key)
-		val.Render(out, indent+"  ")
-	}
-	fmt.Fprintln(out, "%s>>\n", indent)
-}
-
-type Str string
-
-func (elt *Str) Render(out io.Writer, indent string) {
-	fmt.Fprintf(out, "(%s)\n", elt)
-}
-
-type Ref struct {
-	Count  int
-	Actual Value
-}
-
-func (elt *Ref) Render(out io.Writer, indent string) {
-	fmt.Fprintf(out, "%d 0 R\n", elt.Count)
-}
 
 const obj_info = `<<
   /Title (%s Directory)

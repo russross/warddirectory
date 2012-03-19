@@ -1,3 +1,7 @@
+//
+// Main driver
+//
+
 package main
 
 import (
@@ -13,24 +17,23 @@ import (
 const (
 	fontPrefix         = "fonts"
 	romanFont          = "ptmr8a.afm"
-	romanStemV         = 85
+	romanStemV         = 85 // this is missing from the .afm file
 	boldFont           = "ptmb8a.afm"
 	boldStemV          = 140
 	typewriterFont     = "cmtt10.afm"
 	typewriterFontFile = "cmtt10.pfb"
 	typewriterStemV    = 125
-	ForChurchUseOnly   = "For Church Use Only"
+	Disclaimer         = "For Church Use Only"
 	CompressStreams    = true
-	//typewriterFont     = "pcrr8a.afm"
 
 	inch            float64 = 72.0
 	MinimumFontSize float64 = 4.0
 	MaximumFontSize float64 = 18.0
 
 	// The minimum allowed space size as a fraction of the normal size
-	MinSpaceSize  float64 = .85
-	MinLineHeight float64 = .95
-	Leading       float64 = 1.2
+	MinSpaceSize   float64 = .85
+	MinLineHeight  float64 = .95
+	DefaultLeading float64 = 1.2
 
 	// find best font size to this precision
 	FontSizeTolerance float64 = 0.001
@@ -74,14 +77,14 @@ func main() {
 		log.Fatal("finding font size: ", err)
 	}
 
-	// render the family listings
-	dir.splitIntoLines()
-	dir.renderColumns()
-
 	// render the header
 	if err = dir.renderHeader(); err != nil {
 		log.Fatal("rendering header: ", err)
 	}
+
+	// render the family listings
+	dir.splitIntoLines()
+	dir.renderColumns()
 
 	// generate the PDF file
 	if err = dir.makePDF(); err != nil {
@@ -95,9 +98,8 @@ func (dir *Directory) makePDF() (err error) {
 
 	timestamp := time.Now().Format("20060102150405-0700")
 	timestamp = "D:" + timestamp[:17] + "'" + timestamp[17:19] + "'" + timestamp[19:]
-	title := "Diamond Valley Second Ward"
 	author := "Russ Ross"
-	info := doc.AddObject(fmt.Sprintf(obj_info, title, author, timestamp, timestamp))
+	info := doc.AddObject(fmt.Sprintf(obj_info, dir.Title, author, timestamp, timestamp))
 	pages := doc.ForwardRef(1)
 	catalog := doc.AddObject(fmt.Sprintf(obj_catalog, pages))
 	page1 := doc.ForwardRef(1)

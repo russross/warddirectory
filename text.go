@@ -1,179 +1,18 @@
+//
+// Text processing
+// Code to render strings using fonts,
+// break entries into lines, break lists of entries into columns
+// find the optimal font size, etc.
+//
+
 package main
 
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"math"
-	"strings"
 	"time"
 )
-
-// metrics for a single glyph from a font
-type GlyphMetrics struct {
-	Code       int
-	Width      int
-	Name       string
-	BBoxLeft   int
-	BBoxBottom int
-	BBoxRight  int
-	BBoxTop    int
-	Ligatures  map[string]string
-	Kerning    map[string]int
-}
-
-// metrics for an entire font
-type FontMetrics struct {
-	Name        string
-	Label       string
-	Filename    string
-	CapHeight   int
-	Glyphs      map[string]*GlyphMetrics
-	Lookup      map[int]string
-	FirstChar   int
-	LastChar    int
-	Flags       int
-	BBoxLeft    int
-	BBoxBottom  int
-	BBoxRight   int
-	BBoxTop     int
-	ItalicAngle int
-	Ascent      int
-	Descent     int
-	StemV       int
-}
-
-// a single chunk of text made up of glyphs
-type Box struct {
-	Font     *FontMetrics
-	Original string
-	Width    float64
-	Command  string
-	JoinNext bool
-	Penalty  int
-}
-
-// parse a single glyph metric line from a .afm file
-func (font *FontMetrics) parseGlyph(in string) error {
-	// sample: C 102 ; WX 333 ; N f ; B 20 0 383 683 ; L i fi ; L l fl ;
-	glyph := &GlyphMetrics{Ligatures: make(map[string]string), Kerning: make(map[string]int)}
-
-	for _, elt := range strings.Split(in, ";") {
-		elt = strings.TrimSpace(elt)
-		var a, b, c, d int
-		var u, v string
-		if n, err := fmt.Sscanf(elt, "C %d", &a); n == 1 && err == nil {
-			glyph.Code = a
-		} else if n, err := fmt.Sscanf(elt, "CH %x", &a); n == 1 && err == nil {
-			glyph.Code = a
-		} else if n, err := fmt.Sscanf(elt, "WX %d", &a); n == 1 && err == nil {
-			glyph.Width = a
-		} else if n, err := fmt.Sscanf(elt, "N %s", &u); n == 1 && err == nil {
-			glyph.Name = u
-		} else if n, err := fmt.Sscanf(elt, "B %d %d %d %d", &a, &b, &c, &d); n == 4 && err == nil {
-			glyph.BBoxLeft, glyph.BBoxBottom, glyph.BBoxRight, glyph.BBoxTop = a, b, c, d
-		} else if n, err := fmt.Sscanf(elt, "L %s %s", &u, &v); n == 2 && err == nil {
-			glyph.Ligatures[u] = v
-		} else if elt == "" {
-		} else {
-			return errors.New("Unknown glyph metric field: [" + elt + "] from [" + in + "]")
-		}
-	}
-
-	if glyph.Name == "" {
-		return errors.New("No glyph name found in metric line: [" + in + "]")
-	}
-
-	font.Glyphs[glyph.Name] = glyph
-	if glyph.Code >= 0 {
-		font.Lookup[glyph.Code] = glyph.Name
-	}
-
-	return nil
-}
-
-// parse a single glyph kerning line from a .afm file
-func (font *FontMetrics) parseKerning(in string) error {
-	// sample: KPX f i -20
-	var a int
-	var u, v string
-	if n, err := fmt.Sscanf(in, "KPX %s %s %d", &u, &v, &a); n == 3 && err == nil {
-		glyph, present := font.Glyphs[u]
-		if !present {
-			return errors.New("Kerning found for unknown glyph: [" + in + "]")
-		}
-		glyph.Kerning[v] = a
-	} else {
-		return errors.New("Unknown kerning line: [" + in + "]")
-	}
-
-	return nil
-}
-
-// parse and entire .afm file
-func parseFontMetricsFile(file string, label string, stemv int) (font *FontMetrics, err error) {
-	contents, err := ioutil.ReadFile(file)
-	if err != nil {
-		return
-	}
-	font = &FontMetrics{
-		Glyphs: make(map[string]*GlyphMetrics),
-		Lookup: make(map[int]string),
-		Label:  label,
-		StemV:  stemv,
-		Flags:  1<<1 | 1<<5,
-	}
-	lines := strings.Split(string(contents), "\n")
-	for i := 0; i < len(lines); i++ {
-		line := strings.TrimSpace(lines[i])
-		a, b, c, d, count := 0, 0, 0, 0, 0
-		n := 0
-		s := ""
-		if n, err = fmt.Sscanf(line, "CapHeight %d", &a); n == 1 && err == nil {
-			font.CapHeight = a
-		} else if n, err = fmt.Sscanf(line, "FontBBox %d %d %d %d", &a, &b, &c, &d); n == 4 && err == nil {
-			font.BBoxLeft = a
-			font.BBoxBottom = b
-			font.BBoxRight = c
-			font.BBoxTop = d
-		} else if n, err = fmt.Sscanf(line, "ItalicAngle %d", &a); n == 1 && err == nil {
-			font.ItalicAngle = a
-		} else if n, err = fmt.Sscanf(line, "Ascender %d", &a); n == 1 && err == nil {
-			font.Ascent = a
-		} else if n, err = fmt.Sscanf(line, "Descender %d", &a); n == 1 && err == nil {
-			font.Descent = a
-		} else if n, err = fmt.Sscanf(line, "IsFixedPitch %s", &s); n == 1 && err == nil {
-			if s == "true" {
-				font.Flags |= 1
-			}
-		} else if n, err = fmt.Sscanf(line, "StartCharMetrics %d", &count); n == 1 && err == nil {
-			i += 1
-			for j := 0; j < count && i < len(lines); j, i = j+1, i+1 {
-				line := strings.TrimSpace(lines[i])
-				if err = font.parseGlyph(line); err != nil {
-					return
-				}
-			}
-		} else if n, err = fmt.Sscanf(line, "StartKernPairs %d", &count); n == 1 && err == nil {
-			i += 1
-			for j := 0; j < count && i < len(lines); i++ {
-				line := strings.TrimSpace(lines[i])
-				if line == "" {
-					continue
-				}
-				if err = font.parseKerning(line); err != nil {
-					return
-				}
-				j++
-			}
-		} else if n, err = fmt.Sscanf(line, "FontName %s", &s); n == 1 && err == nil {
-			font.Name = s
-		}
-		err = nil
-	}
-
-	return
-}
 
 // given a string, render it into PDF syntax using font metric data
 // this also computes the width of the box in units equal to 1/1000th of a point
@@ -409,6 +248,7 @@ func (elt *BoxSlice) Cost(a, b int, first, last bool) float64 {
 type EntrySlice struct {
 	Entries      [][]int
 	ColumnHeight float64
+	Leading      float64
 }
 
 func (elt *EntrySlice) Len() int {
@@ -425,14 +265,14 @@ func (elt *EntrySlice) Cost(a, b int, first, last bool) float64 {
 	}
 
 	// units are normalized to one line per 1000 columnheight units
-	squeeze := ((elt.ColumnHeight / 1000.0) - 1.0) / (float64(count-1) * Leading)
+	squeeze := ((elt.ColumnHeight / 1000.0) - 1.0) / (float64(count-1) * elt.Leading)
 
 	// forbid squeezing too much
 	if squeeze < MinLineHeight {
 		return math.Inf(1)
 	}
 
-	extralines := ((elt.ColumnHeight / 1000.0) - 1.0) - (float64(count-1) * Leading)
+	extralines := ((elt.ColumnHeight / 1000.0) - 1.0) - (float64(count-1) * elt.Leading)
 
 	// squishing is worse than stretching
 	if extralines < 0 {
@@ -626,7 +466,7 @@ func (dir *Directory) renderHeader() (err error) {
 	if date, err = dir.Roman.MakeBox(time.Now().Format("January 2, 2006"), 1.0); err != nil {
 		return
 	}
-	if useonly, err = dir.Roman.MakeBox(ForChurchUseOnly, 1.0); err != nil {
+	if useonly, err = dir.Roman.MakeBox(Disclaimer, 1.0); err != nil {
 		return
 	}
 
@@ -664,4 +504,74 @@ func (dir *Directory) renderHeader() (err error) {
 	dir.Header = text
 
 	return
+}
+
+func (dir *Directory) findFontSize() (err error) {
+	low, high := MinimumFontSize, MaximumFontSize
+	finalrun := false
+	success := false
+
+	for {
+		// get the next font size to try
+		dir.FontSize = (high + low) / 2.0
+		if finalrun {
+			dir.FontSize = low
+		}
+
+		// the width of a single column
+		// this is in font units, which are 1000ths of a point
+		// adjusted for the font size
+		firstlinewidth := dir.ColumnWidth * 1000.0 / dir.FontSize
+		linewidth := firstlinewidth - GoldenRatio*1000.0
+		spacesize := float64(dir.Roman.Glyphs["space"].Width)
+		columnheight := dir.ColumnHeight * 1000.0 / dir.FontSize
+
+		// do line breaking
+		dir.Linebreaks = nil
+		breaklines := &BoxSlice{
+			FirstLineWidth: firstlinewidth,
+			LineWidth:      linewidth,
+			SpaceSize:      spacesize,
+		}
+		for _, entry := range dir.Entries {
+			breaklines.Boxes = entry
+			breaks := Break(breaklines)
+			dir.Linebreaks = append(dir.Linebreaks, breaks)
+		}
+
+		// do column breaking
+		breakentries := &EntrySlice{
+			Entries:      dir.Linebreaks,
+			ColumnHeight: columnheight,
+			Leading:      DefaultLeading,
+		}
+		dir.Columnbreaks = Break(breakentries)
+
+		if finalrun {
+			break
+		}
+
+		// evaluate this break
+		if len(dir.Columnbreaks) > dir.ColumnCount || len(dir.Columnbreaks) == 0 {
+			high = dir.FontSize
+		} else {
+			low = dir.FontSize
+			success = true
+		}
+
+		// are we finished?
+		if high-low < FontSizeTolerance {
+			if low == dir.FontSize {
+				break
+			}
+
+			// run it one more time to recompute the best one we found
+			finalrun = true
+		}
+	}
+
+	if !success {
+		return errors.New("Unable to find a suitable font size")
+	}
+	return nil
 }

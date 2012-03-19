@@ -10,4 +10,5 @@ directory.pdf:	membership.csv *.go
 	go run *.go < membership.csv > directory.pdf
 
 clean:
+	go clean
 	rm -f directory.pdf membership.csv
