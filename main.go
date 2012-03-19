@@ -112,36 +112,36 @@ func (dir *Directory) makePDF() (err error) {
 	i := 1
 	roman := doc.ForwardRef(i)
 	i++
-	romanwidths := doc.ForwardRef(i)
-	i++
-	romandescriptor := doc.ForwardRef(i)
-	i++
-	romanembedded := ""
+	var romanwidths, romandescriptor, romanembedded string
 	if dir.Roman.Filename != "" {
+		romanwidths = doc.ForwardRef(i)
+		i++
+		romandescriptor = doc.ForwardRef(i)
+		i++
 		romanembedded = doc.ForwardRef(i)
 		i++
 	}
 
 	bold := doc.ForwardRef(i)
 	i++
-	boldwidths := doc.ForwardRef(i)
-	i++
-	bolddescriptor := doc.ForwardRef(i)
-	i++
-	boldembedded := ""
+	var boldwidths, bolddescriptor, boldembedded string
 	if dir.Bold.Filename != "" {
+		boldwidths = doc.ForwardRef(i)
+		i++
+		bolddescriptor = doc.ForwardRef(i)
+		i++
 		boldembedded = doc.ForwardRef(i)
 		i++
 	}
 
 	typewriter := doc.ForwardRef(i)
 	i++
-	typewriterwidths := doc.ForwardRef(i)
-	i++
-	typewriterdescriptor := doc.ForwardRef(i)
-	i++
-	typewriterembedded := ""
+	var typewriterwidths, typewriterdescriptor, typewriterembedded string
 	if dir.Typewriter.Filename != "" {
+		typewriterwidths = doc.ForwardRef(i)
+		i++
+		typewriterdescriptor = doc.ForwardRef(i)
+		i++
 		typewriterembedded = doc.ForwardRef(i)
 		i++
 	}
@@ -150,9 +150,9 @@ func (dir *Directory) makePDF() (err error) {
 
 	// roman font
 	doc.AddObject(makeFont(dir.Roman, romanwidths, romandescriptor))
-	doc.AddObject(makeWidths(dir.Roman))
-	doc.AddObject(makeFontDescriptor(dir.Roman, romanembedded))
 	if dir.Roman.Filename != "" {
+		doc.AddObject(makeWidths(dir.Roman))
+		doc.AddObject(makeFontDescriptor(dir.Roman, romanembedded))
 		var font []byte
 		if font, err = ioutil.ReadFile(dir.Roman.Filename); err != nil {
 			return
@@ -162,9 +162,9 @@ func (dir *Directory) makePDF() (err error) {
 
 	// bold font
 	doc.AddObject(makeFont(dir.Bold, boldwidths, bolddescriptor))
-	doc.AddObject(makeWidths(dir.Bold))
-	doc.AddObject(makeFontDescriptor(dir.Bold, boldembedded))
 	if dir.Bold.Filename != "" {
+		doc.AddObject(makeWidths(dir.Bold))
+		doc.AddObject(makeFontDescriptor(dir.Bold, boldembedded))
 		var font []byte
 		if font, err = ioutil.ReadFile(dir.Bold.Filename); err != nil {
 			return
@@ -174,9 +174,9 @@ func (dir *Directory) makePDF() (err error) {
 
 	// typewriter font
 	doc.AddObject(makeFont(dir.Typewriter, typewriterwidths, typewriterdescriptor))
-	doc.AddObject(makeWidths(dir.Typewriter))
-	doc.AddObject(makeFontDescriptor(dir.Typewriter, typewriterembedded))
 	if dir.Typewriter.Filename != "" {
+		doc.AddObject(makeWidths(dir.Typewriter))
+		doc.AddObject(makeFontDescriptor(dir.Typewriter, typewriterembedded))
 		var font []byte
 		if font, err = ioutil.ReadFile(dir.Typewriter.Filename); err != nil {
 			return
@@ -190,6 +190,9 @@ func (dir *Directory) makePDF() (err error) {
 }
 
 func makeFont(font *FontMetrics, widths, descriptor string) string {
+	if font.Filename == "" {
+		return fmt.Sprintf(obj_font_builtin, "/"+font.Name)
+	}
 	return fmt.Sprintf(obj_font,
 		"/"+font.Name,
 		font.FirstChar,

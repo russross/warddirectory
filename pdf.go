@@ -84,6 +84,14 @@ const obj_fontresource = `<<
   /FT %s
 >>
 `
+
+const obj_font_builtin = `<<
+  /Type /Font
+  /Subtype /Type1
+  /BaseFont %s
+>>
+`
+
 const obj_font = `<<
   /Type /Font
   /Subtype /Type1
