@@ -1,0 +1,23 @@
+{
+    "Title": "Diamond Valley Second Ward",
+    "Disclaimer": "For Church Use Only",
+    "DateFormat": "January 2, 2006",
+    "PageWidth": 612.0,
+    "PageHeight": 792.0,
+    "TopMargin": 72.0,
+    "BottomMargin": 54.0,
+    "LeftMargin": 36.0,
+    "RightMargin": 36.0,
+    "ColumnsPerPage": 2,
+    "ColumnSep": 10.0,
+    "LeadingMultiplier": 1.2,
+    "MinimumFontSize": 4.0,
+    "MaximumFontSize": 18.0,
+    "MinimumSpaceMultiplier": 0.85,
+    "MinimumLineHeightMultiplier": 0.95,
+    "FontSizePrecision": 0.001,
+    "TitleFontMultiplier": 1.41421356237309504880,
+    "FirstLineDedentMultiplier": 1.61803398874989484820,
+
+    "dummy": null
+}

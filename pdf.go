@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"compress/zlib"
+	"encoding/json"
 	"fmt"
 )
 
@@ -123,54 +124,69 @@ startxref
 `
 
 type Directory struct {
-	PageWidth, PageHeight       float64
-	TopMargin, BottomMargin     float64
-	LeftMargin, RightMargin     float64
-	ColumnsPerPage, ColumnCount int
+	// configured values
+	Title                       string
+	Disclaimer                  string
+	DateFormat                  string
+	PageWidth                   float64
+	PageHeight                  float64
+	TopMargin                   float64
+	BottomMargin                float64
+	LeftMargin                  float64
+	RightMargin                 float64
+	ColumnsPerPage              int
 	ColumnSep                   float64
-	ColumnWidth, ColumnHeight   float64
+	LeadingMultiplier           float64
+	MinimumFontSize             float64
+	MaximumFontSize             float64
+	MinimumSpaceMultiplier      float64
+	MinimumLineHeightMultiplier float64
+	FontSizePrecision           float64
+	TitleFontMultiplier         float64
+	FirstLineDedentMultiplier   float64
 
-	Roman, Bold, Typewriter *FontMetrics
+	// fonts
+	Roman      *FontMetrics `json:"-"`
+	Bold       *FontMetrics `json:"-"`
+	Typewriter *FontMetrics `json:"-"`
 
-	Title        string
-	Families     []*Family
-	Entries      [][]*Box
-	Linebreaks   [][]int
-	Columnbreaks []int
-	Lines        [][][]*Box
-	FontSize     float64
-	Columns      []string
-	Header       string
+	// computed values
+	ColumnWidth  float64 `json:"-"`
+	ColumnHeight float64 `json:"-"`
+	ColumnCount  int     `json:"-"`
+
+	// processed values
+	Families     []*Family  `json:"-"`
+	Entries      [][]*Box   `json:"-"`
+	Linebreaks   [][]int    `json:"-"`
+	Columnbreaks []int      `json:"-"`
+	Lines        [][][]*Box `json:"-"`
+	FontSize     float64    `json:"-"`
+	Columns      []string   `json:"-"`
+	Header       string     `json:"-"`
 }
 
-func NewDirectory(title string, roman, bold, typewriter *FontMetrics) *Directory {
-	elt := &Directory{
-		PageWidth:      8.5 * inch,
-		PageHeight:     11.0 * inch,
-		TopMargin:      1.0 * inch, // note: header is in top margin
-		BottomMargin:   .75 * inch,
-		LeftMargin:     .5 * inch,
-		RightMargin:    .5 * inch,
-		ColumnsPerPage: 2,
-		ColumnSep:      10.0,
+func NewDirectory(config []byte, roman, bold, typewriter *FontMetrics) (dir *Directory, err error) {
 
-		Roman:      roman,
-		Bold:       bold,
-		Typewriter: typewriter,
-
-		Title: title,
+	dir = new(Directory)
+	if err = json.Unmarshal(config, dir); err != nil {
+		return
 	}
-	elt.ColumnCount = elt.ColumnsPerPage * 2
-	elt.ColumnWidth = elt.PageWidth
-	elt.ColumnWidth -= elt.LeftMargin
-	elt.ColumnWidth -= elt.RightMargin
-	elt.ColumnWidth -= elt.ColumnSep * float64(elt.ColumnsPerPage-1)
-	elt.ColumnWidth /= float64(elt.ColumnsPerPage)
-	elt.ColumnHeight = elt.PageHeight
-	elt.ColumnHeight -= elt.TopMargin
-	elt.ColumnHeight -= elt.BottomMargin
+	dir.Roman = roman
+	dir.Bold = bold
+	dir.Typewriter = typewriter
 
-	return elt
+	dir.ColumnCount = dir.ColumnsPerPage * 2
+	dir.ColumnWidth = dir.PageWidth
+	dir.ColumnWidth -= dir.LeftMargin
+	dir.ColumnWidth -= dir.RightMargin
+	dir.ColumnWidth -= dir.ColumnSep * float64(dir.ColumnsPerPage-1)
+	dir.ColumnWidth /= float64(dir.ColumnsPerPage)
+	dir.ColumnHeight = dir.PageHeight
+	dir.ColumnHeight -= dir.TopMargin
+	dir.ColumnHeight -= dir.BottomMargin
+
+	return
 }
 
 type Document struct {

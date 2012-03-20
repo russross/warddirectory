@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"math"
 	"os"
 	"path/filepath"
 	"time"
@@ -25,22 +24,7 @@ const (
 	typewriterStemV    = 125
 	Disclaimer         = "For Church Use Only"
 	CompressStreams    = true
-
-	inch            float64 = 72.0
-	MinimumFontSize float64 = 4.0
-	MaximumFontSize float64 = 18.0
-
-	// The minimum allowed space size as a fraction of the normal size
-	MinSpaceSize   float64 = .85
-	MinLineHeight  float64 = .95
-	DefaultLeading float64 = 1.2
-
-	// find best font size to this precision
-	FontSizeTolerance float64 = 0.001
 )
-
-var TitleFontMultiplier float64 = math.Sqrt(2.0)
-var GoldenRatio float64 = (1.0 + math.Sqrt(5.0)) / 2.0
 
 func main() {
 	// first load the fonts
@@ -59,8 +43,14 @@ func main() {
 	typewriter.Filename = filepath.Join(fontPrefix, typewriterFontFile)
 
 	// create directory object
-	title := "Diamond Valley Second Ward"
-	dir := NewDirectory(title, roman, bold, typewriter)
+	config, err := ioutil.ReadFile("dv2.json")
+	if err != nil {
+		log.Fatal("loading json file: ", err)
+	}
+	dir, err := NewDirectory(config, roman, bold, typewriter)
+	if err != nil {
+		log.Fatal("parsing json file: ", err)
+	}
 
 	// load and parse the families
 	if err = dir.parseFamilies(os.Stdin); err != nil {

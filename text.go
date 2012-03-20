@@ -182,10 +182,8 @@ func Break(sequence Breakable) (startofeachchunk []int) {
 }
 
 type BoxSlice struct {
-	Boxes          []*Box
-	FirstLineWidth float64
-	LineWidth      float64
-	SpaceSize      float64
+	Boxes     []*Box
+	Directory *Directory
 }
 
 func (elt *BoxSlice) Len() int {
@@ -209,16 +207,17 @@ func (elt *BoxSlice) Cost(a, b int, first, last bool) float64 {
 			spaces += 1.0
 		}
 	}
-	maxwidth := cost + spaces*elt.SpaceSize
-	minwidth := cost + spaces*elt.SpaceSize*MinSpaceSize
+	spacesize := float64(elt.Directory.Roman.Glyphs["space"].Width)
+	maxwidth := cost + spaces*spacesize
+	minwidth := cost + spaces*spacesize*elt.Directory.MinimumSpaceMultiplier
 
 	// if we prefer not to break here, then the penalty is the
 	// same as a completely blank line
-	width := elt.LineWidth
-	if first {
-		width = elt.FirstLineWidth
+	width := elt.Directory.ColumnWidth * 1000.0 / elt.Directory.FontSize
+	if !first {
+		width -= elt.Directory.FirstLineDedentMultiplier * 1000.0
 	}
-	penalty := width / elt.SpaceSize
+	penalty := width / spacesize
 	penalty = penalty * penalty * float64(words[len(words)-1].Penalty)
 
 	switch {
@@ -228,7 +227,7 @@ func (elt *BoxSlice) Cost(a, b int, first, last bool) float64 {
 
 	// easy fit
 	case maxwidth <= width:
-		excess := (width - maxwidth) / elt.SpaceSize
+		excess := (width - maxwidth) / spacesize
 
 		// no penalty for trailing spaces on the last line
 		if last {
@@ -239,16 +238,15 @@ func (elt *BoxSlice) Cost(a, b int, first, last bool) float64 {
 
 	// squished fit
 	default:
-		squish := (maxwidth - width) / elt.SpaceSize
+		squish := (maxwidth - width) / spacesize
 		return squish*squish*squish + penalty
 	}
 	panic("Can't get here")
 }
 
 type EntrySlice struct {
-	Entries      [][]int
-	ColumnHeight float64
-	Leading      float64
+	Entries   [][]int
+	Directory *Directory
 }
 
 func (elt *EntrySlice) Len() int {
@@ -257,6 +255,7 @@ func (elt *EntrySlice) Len() int {
 
 func (elt *EntrySlice) Cost(a, b int, first, last bool) float64 {
 	entries := elt.Entries[a:b]
+	columnheight := elt.Directory.ColumnHeight * 1000.0 / elt.Directory.FontSize
 
 	// count up the number of lines
 	count := 0
@@ -265,14 +264,15 @@ func (elt *EntrySlice) Cost(a, b int, first, last bool) float64 {
 	}
 
 	// units are normalized to one line per 1000 columnheight units
-	squeeze := ((elt.ColumnHeight / 1000.0) - 1.0) / (float64(count-1) * elt.Leading)
+	squeeze := ((columnheight / 1000.0) - 1.0) / (float64(count-1) * elt.Directory.LeadingMultiplier)
 
 	// forbid squeezing too much
-	if squeeze < MinLineHeight {
+	if squeeze < elt.Directory.MinimumLineHeightMultiplier {
 		return math.Inf(1)
 	}
 
-	extralines := ((elt.ColumnHeight / 1000.0) - 1.0) - (float64(count-1) * elt.Leading)
+	extralines := ((columnheight / 1000.0) - 1.0) -
+		(float64(count-1) * elt.Directory.LeadingMultiplier)
 
 	// squishing is worse than stretching
 	if extralines < 0 {
@@ -285,7 +285,7 @@ func (elt *EntrySlice) Cost(a, b int, first, last bool) float64 {
 
 func (dir *Directory) splitIntoLines() {
 	firstlinewidth := dir.ColumnWidth * 1000.0 / dir.FontSize
-	linewidth := firstlinewidth - GoldenRatio*1000.0
+	linewidth := firstlinewidth - dir.FirstLineDedentMultiplier*1000.0
 	for i, entry := range dir.Entries {
 		var newentry [][]*Box
 		breaks := dir.Linebreaks[i]
@@ -415,7 +415,7 @@ func (dir *Directory) renderColumn(entries [][][]*Box, number int) string {
 	y := dir.BottomMargin + dir.ColumnHeight - dir.FontSize
 
 	// what is the starting position for an indented line?
-	xi := x + dir.FontSize*GoldenRatio
+	xi := x + dir.FontSize*dir.FirstLineDedentMultiplier
 
 	// how many lines are there?
 	count := 0
@@ -483,7 +483,7 @@ func (dir *Directory) renderHeader() (err error) {
 	text += fmt.Sprintf("/%s %.3f Tf %s\n", dir.Roman.Label, dir.FontSize, date.Command)
 
 	// place the title
-	tfontsize := dir.FontSize * TitleFontMultiplier
+	tfontsize := dir.FontSize * dir.TitleFontMultiplier
 	text += fmt.Sprintf("1 0 0 1 %.3f %.3f Tm\n",
 		(dir.PageWidth-title.Width/1000.0*tfontsize)/2.0, y)
 	text += fmt.Sprintf("/%s %.3f Tf %s\n", dir.Bold.Label, tfontsize, title.Command)
@@ -507,7 +507,7 @@ func (dir *Directory) renderHeader() (err error) {
 }
 
 func (dir *Directory) findFontSize() (err error) {
-	low, high := MinimumFontSize, MaximumFontSize
+	low, high := dir.MinimumFontSize, dir.MaximumFontSize
 	finalrun := false
 	success := false
 
@@ -518,20 +518,10 @@ func (dir *Directory) findFontSize() (err error) {
 			dir.FontSize = low
 		}
 
-		// the width of a single column
-		// this is in font units, which are 1000ths of a point
-		// adjusted for the font size
-		firstlinewidth := dir.ColumnWidth * 1000.0 / dir.FontSize
-		linewidth := firstlinewidth - GoldenRatio*1000.0
-		spacesize := float64(dir.Roman.Glyphs["space"].Width)
-		columnheight := dir.ColumnHeight * 1000.0 / dir.FontSize
-
 		// do line breaking
 		dir.Linebreaks = nil
 		breaklines := &BoxSlice{
-			FirstLineWidth: firstlinewidth,
-			LineWidth:      linewidth,
-			SpaceSize:      spacesize,
+			Directory: dir,
 		}
 		for _, entry := range dir.Entries {
 			breaklines.Boxes = entry
@@ -541,9 +531,8 @@ func (dir *Directory) findFontSize() (err error) {
 
 		// do column breaking
 		breakentries := &EntrySlice{
-			Entries:      dir.Linebreaks,
-			ColumnHeight: columnheight,
-			Leading:      DefaultLeading,
+			Entries:   dir.Linebreaks,
+			Directory: dir,
 		}
 		dir.Columnbreaks = Break(breakentries)
 
@@ -560,7 +549,7 @@ func (dir *Directory) findFontSize() (err error) {
 		}
 
 		// are we finished?
-		if high-low < FontSizeTolerance {
+		if high-low < dir.FontSizePrecision {
 			if low == dir.FontSize {
 				break
 			}
