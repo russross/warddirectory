@@ -9,7 +9,7 @@ all:	directory.pdf
 #	cp ~/Downloads/123456.csv ./membership.csv
 
 directory.pdf:	membership.csv config.json *.go
-	go run *.go < membership.csv > directory.pdf
+	go run *.go membership.csv
 
 clean:
 	go clean

@@ -72,8 +72,8 @@ func (elt *Document) WriteTrailer(info, catalog string) {
 	fmt.Fprintf(elt.out, obj_trailer, len(elt.Xref)+1, info, catalog, startxref)
 }
 
-func (elt *Document) Dump() {
-	fmt.Print(elt.out.String())
+func (elt *Document) Dump() error {
+	return ioutil.WriteFile(outputfilename, elt.out.Bytes(), 0644)
 }
 
 func (dir *Directory) MakePDF() (err error) {
@@ -182,8 +182,7 @@ func (dir *Directory) MakePDF() (err error) {
 	}
 
 	doc.WriteTrailer(info, catalog)
-	doc.Dump()
-	return nil
+	return doc.Dump()
 }
 
 func makeFont(font *FontMetrics, widths, descriptor string) string {

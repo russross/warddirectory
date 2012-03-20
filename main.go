@@ -14,6 +14,7 @@ import (
 )
 
 const (
+	outputfilename     = "directory.pdf"
 	fontPrefix         = "fonts"
 	romanFont          = "ptmr8a.afm"
 	romanStemV         = 85 // this is missing from the .afm file
@@ -79,6 +80,16 @@ type Directory struct {
 }
 
 func main() {
+	// where is the input coming from?
+	in := os.Stdin
+	if len(os.Args) == 2 {
+		var err error
+		in, err = os.Open(os.Args[1])
+		if err != nil {
+			log.Fatal("opening ["+os.Args[1]+"]: ", err)
+		}
+	}
+
 	// first load the fonts
 	roman, err := ParseFontMetricsFile(filepath.Join(fontPrefix, romanFont), "FR", romanStemV)
 	if err != nil {
@@ -108,8 +119,11 @@ func main() {
 	}
 
 	// load and parse the families
-	if err = dir.ParseFamilies(os.Stdin); err != nil {
+	if err = dir.ParseFamilies(in); err != nil {
 		log.Fatal("parsing families: ", err)
+	}
+	if len(os.Args) == 2 {
+		in.Close()
 	}
 
 	// format families
