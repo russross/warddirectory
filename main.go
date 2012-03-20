@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 )
 
 const (
@@ -21,9 +22,15 @@ const (
 	typewriterFont     = "cmtt10.afm"
 	typewriterFontFile = "cmtt10.pfb"
 	typewriterStemV    = 125
-	Disclaimer         = "For Church Use Only"
 	CompressStreams    = true
 )
+
+type RegularExpression struct {
+	Expression  string
+	Replacement string
+
+	Regexp *regexp.Regexp `json:"-"`
+}
 
 type Directory struct {
 	// configured values
@@ -46,6 +53,9 @@ type Directory struct {
 	FontSizePrecision           float64
 	TitleFontMultiplier         float64
 	FirstLineDedentMultiplier   float64
+
+	PhoneRegexps   []*RegularExpression
+	AddressRegexps []*RegularExpression
 
 	// fonts
 	Roman      *FontMetrics `json:"-"`
@@ -92,6 +102,9 @@ func main() {
 	dir, err := NewDirectory(config, roman, bold, typewriter)
 	if err != nil {
 		log.Fatal("parsing json file: ", err)
+	}
+	if err = dir.CompileRegexps(); err != nil {
+		log.Fatal("bad regular expression in config file: ", err)
 	}
 
 	// load and parse the families

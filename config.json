@@ -11,13 +11,48 @@
     "ColumnsPerPage": 2,
     "ColumnSep": 10.0,
     "LeadingMultiplier": 1.2,
-    "MinimumFontSize": 4.0,
-    "MaximumFontSize": 18.0,
+    "MinimumFontSize": 2.0,
+    "MaximumFontSize": 32.0,
     "MinimumSpaceMultiplier": 0.85,
     "MinimumLineHeightMultiplier": 0.95,
     "FontSizePrecision": 0.001,
     "TitleFontMultiplier": 1.41421356237309504880,
     "FirstLineDedentMultiplier": 1.61803398874989484820,
 
-    "dummy": null
+    "PhoneRegexps": [
+        {
+            "Expression": "^\\D*(\\d{3})\\D*(\\d{3})\\D*(\\d{4})\\D*$",
+            "Replacement": "$1-$2-$3"
+        },
+        {
+            "Expression": "^\\D*(\\d{3})\\D*(\\d{4})\\D*$",
+            "Replacement": "$1-$2"
+        },
+        {
+            "Expression": "^435-",
+            "Replacement": ""
+        }
+    ],
+    "AddressRegexps": [
+        {
+            "Expression": " +\\d+(-\\d+)?$",
+            "Replacement": ""
+        },
+        {
+            "Expression": ", +Utah$",
+            "Replacement": ""
+        },
+        {
+            "Expression": " +Dammeron +Valley$",
+            "Replacement": ", Dammeron Valley"
+        },
+        {
+            "Expression": " +St. George$",
+            "Replacement": ", St. George"
+        },
+        {
+            "Expression": " +Diamond +Valley$",
+            "Replacement": ""
+        }
+    ]
 }

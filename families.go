@@ -13,7 +13,6 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
-	"log"
 	"regexp"
 	"sort"
 	"strings"
@@ -29,29 +28,10 @@ type Family struct {
 	Surname string
 	Couple  string
 	Address string
-	City    string
-	State   string
-	Zip     string
 	Phone   string
 	Email   string
 	People  []*Person
 }
-
-var (
-	AREACODE = "435"
-	CITY     = "Diamond Valley"
-	STATE    = "Utah"
-	CITIES   = []string{"Diamond Valley", "Dammeron Valley", "St. George"}
-	STATES   = []string{"Utah"}
-)
-
-// the regexp to split an address into address, city, state components
-var ADDRESS_RE = regexp.MustCompile(
-	`^(.*?)\s*(` +
-		strings.Join(CITIES, "|") +
-		`)?,\s*(` +
-		strings.Join(STATES, "|") +
-		`)?\s*([\d-]+)?$`)
 
 // sortable list
 type familyList []*Family
@@ -97,26 +77,19 @@ var headerFields = []string{
 	"Child Name", "Child Phone", "Child Email",
 }
 
-func prepStreet(street string) string {
-	// insert cleanups and abbreviations here
-	return street
-}
-
-var phone10digit = regexp.MustCompile(`^\D*(\d{3})\D*(\d{3})\D*(\d{4})\D*$`)
-var phone7digit = regexp.MustCompile(`^\D*(\d{3})\D*(\d{4})\D*$`)
-
-func prepPhone(phone, familyPhone string) string {
-	// prepare phone number
-	// look for groups of digits, ignore everything else
-	if parts := phone10digit.FindStringSubmatch(phone); len(parts) == 4 {
-		phone = strings.Join(parts[1:], "-")
-	} else if parts := phone7digit.FindStringSubmatch(phone); len(parts) == 3 {
-		phone = strings.Join(parts[1:], "-")
+func prepAddress(regexps []*RegularExpression, address string) string {
+	// prepare address
+	for _, re := range regexps {
+		address = re.Regexp.ReplaceAllString(address, re.Replacement)
 	}
 
-	// string the area code if it is the default
-	if len(phone) >= 12 && strings.HasPrefix(phone, AREACODE+"-") {
-		phone = phone[4:]
+	return address
+}
+
+func prepPhone(regexps []*RegularExpression, phone, familyPhone string) string {
+	// prepare phone number
+	for _, re := range regexps {
+		phone = re.Regexp.ReplaceAllString(phone, re.Replacement)
 	}
 
 	if phone == familyPhone {
@@ -177,23 +150,11 @@ func (dir *Directory) ParseFamilies(src io.Reader) error {
 			familyMembers = append(familyMembers, fields[i:i+3])
 		}
 
-		// split the address into street, state, postal
-		parts := ADDRESS_RE.FindStringSubmatch(family.Address)
-		if parts == nil {
-			log.Printf("Malformed address for %s family", family.Couple)
-		} else {
-			for i, elt := range parts {
-				parts[i] = strings.TrimSpace(elt)
-			}
-			// street, city, state, postal code
-			family.Address, family.City, family.State, family.Zip = parts[1], parts[2], parts[3], parts[4]
-
-			// prepare address
-			family.Address = prepStreet(family.Address)
-		}
+		// prepare address
+		family.Address = prepAddress(dir.AddressRegexps, family.Address)
 
 		// prepare the family phone number
-		family.Phone = prepPhone(family.Phone, "")
+		family.Phone = prepPhone(dir.PhoneRegexps, family.Phone, "")
 
 		// prepare family email address
 		family.Email = prepEmail(family.Email, "")
@@ -220,7 +181,7 @@ func (dir *Directory) ParseFamilies(src io.Reader) error {
 			}
 
 			// prepare individual phone number
-			person.Phone = prepPhone(person.Phone, family.Phone)
+			person.Phone = prepPhone(dir.PhoneRegexps, person.Phone, family.Phone)
 
 			// prepare individual email address
 			person.Email = prepEmail(person.Email, family.Email)
@@ -406,13 +367,16 @@ func (dir *Directory) FormatFamilies() (err error) {
 				needcomma = false
 			}
 
-			for i, word := range strings.Fields(family.Address) {
+			words := strings.Fields(family.Address)
+			for i, word := range words {
 				space := 0
 
 				// strongly discourage line breaks within an address
-				if i > 0 {
+				// (but not after a comma)
+				if i > 0 && !strings.HasSuffix(words[i-1], ",") {
 					space = 2
 				}
+
 				if entry, err = packBox(entry, word, space, dir.Roman); err != nil {
 					return
 				}
@@ -420,31 +384,23 @@ func (dir *Directory) FormatFamilies() (err error) {
 			needcomma = true
 		}
 
-		// only show the city if it is not the default
-		if family.City != CITY && family.City != "" {
-			if needcomma {
-				if entry, err = packBox(entry, ",", -1, dir.Roman); err != nil {
-					return
-				}
-				needcomma = false
-			}
-
-			// split the city into words
-			for i, word := range strings.Fields(family.City) {
-				space := 0
-
-				// strongly discourage line breaks within a city
-				if i > 0 {
-					space = 2
-				}
-				if entry, err = packBox(entry, word, space, dir.Roman); err != nil {
-					return
-				}
-			}
-		}
-
 		dir.Entries = append(dir.Entries, entry)
 	}
 
 	return nil
+}
+
+func (dir *Directory) CompileRegexps() (err error) {
+	for _, elt := range dir.PhoneRegexps {
+		if elt.Regexp, err = regexp.Compile(elt.Expression); err != nil {
+			return
+		}
+	}
+	for _, elt := range dir.AddressRegexps {
+		if elt.Regexp, err = regexp.Compile(elt.Expression); err != nil {
+			return
+		}
+	}
+
+	return
 }

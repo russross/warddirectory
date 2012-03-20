@@ -463,10 +463,10 @@ func (dir *Directory) RenderHeader() (err error) {
 	if title, err = dir.Bold.MakeBox(dir.Title, 1.0); err != nil {
 		return
 	}
-	if date, err = dir.Roman.MakeBox(time.Now().Format("January 2, 2006"), 1.0); err != nil {
+	if date, err = dir.Roman.MakeBox(time.Now().Format(dir.DateFormat), 1.0); err != nil {
 		return
 	}
-	if useonly, err = dir.Roman.MakeBox(Disclaimer, 1.0); err != nil {
+	if useonly, err = dir.Roman.MakeBox(dir.Disclaimer, 1.0); err != nil {
 		return
 	}
 
