@@ -5,6 +5,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -26,6 +27,49 @@ const (
 	CompressStreams    = true
 )
 
+type Directory struct {
+	// configured values
+	Title                       string
+	Disclaimer                  string
+	DateFormat                  string
+	PageWidth                   float64
+	PageHeight                  float64
+	TopMargin                   float64
+	BottomMargin                float64
+	LeftMargin                  float64
+	RightMargin                 float64
+	ColumnsPerPage              int
+	ColumnSep                   float64
+	LeadingMultiplier           float64
+	MinimumFontSize             float64
+	MaximumFontSize             float64
+	MinimumSpaceMultiplier      float64
+	MinimumLineHeightMultiplier float64
+	FontSizePrecision           float64
+	TitleFontMultiplier         float64
+	FirstLineDedentMultiplier   float64
+
+	// fonts
+	Roman      *FontMetrics `json:"-"`
+	Bold       *FontMetrics `json:"-"`
+	Typewriter *FontMetrics `json:"-"`
+
+	// computed values
+	ColumnWidth  float64 `json:"-"`
+	ColumnHeight float64 `json:"-"`
+	ColumnCount  int     `json:"-"`
+
+	// processed values
+	Families     []*Family  `json:"-"`
+	Entries      [][]*Box   `json:"-"`
+	Linebreaks   [][]int    `json:"-"`
+	Columnbreaks []int      `json:"-"`
+	Lines        [][][]*Box `json:"-"`
+	FontSize     float64    `json:"-"`
+	Columns      []string   `json:"-"`
+	Header       string     `json:"-"`
+}
+
 func main() {
 	// first load the fonts
 	roman, err := parseFontMetricsFile(filepath.Join(fontPrefix, romanFont), "FR", romanStemV)
@@ -43,7 +87,7 @@ func main() {
 	typewriter.Filename = filepath.Join(fontPrefix, typewriterFontFile)
 
 	// create directory object
-	config, err := ioutil.ReadFile("dv2.json")
+	config, err := ioutil.ReadFile("config.json")
 	if err != nil {
 		log.Fatal("loading json file: ", err)
 	}
@@ -80,6 +124,29 @@ func main() {
 	if err = dir.makePDF(); err != nil {
 		log.Fatal("making the PDF: ", err)
 	}
+}
+
+func NewDirectory(config []byte, roman, bold, typewriter *FontMetrics) (dir *Directory, err error) {
+
+	dir = new(Directory)
+	if err = json.Unmarshal(config, dir); err != nil {
+		return
+	}
+	dir.Roman = roman
+	dir.Bold = bold
+	dir.Typewriter = typewriter
+
+	dir.ColumnCount = dir.ColumnsPerPage * 2
+	dir.ColumnWidth = dir.PageWidth
+	dir.ColumnWidth -= dir.LeftMargin
+	dir.ColumnWidth -= dir.RightMargin
+	dir.ColumnWidth -= dir.ColumnSep * float64(dir.ColumnsPerPage-1)
+	dir.ColumnWidth /= float64(dir.ColumnsPerPage)
+	dir.ColumnHeight = dir.PageHeight
+	dir.ColumnHeight -= dir.TopMargin
+	dir.ColumnHeight -= dir.BottomMargin
+
+	return
 }
 
 func (dir *Directory) makePDF() (err error) {
