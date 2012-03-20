@@ -57,7 +57,7 @@ type Box struct {
 }
 
 // parse a single glyph metric line from a .afm file
-func (font *FontMetrics) parseGlyph(in string) error {
+func (font *FontMetrics) ParseGlyph(in string) error {
 	// sample: C 102 ; WX 333 ; N f ; B 20 0 383 683 ; L i fi ; L l fl ;
 	glyph := &GlyphMetrics{Ligatures: make(map[string]string), Kerning: make(map[string]int)}
 
@@ -96,7 +96,7 @@ func (font *FontMetrics) parseGlyph(in string) error {
 }
 
 // parse a single glyph kerning line from a .afm file
-func (font *FontMetrics) parseKerning(in string) error {
+func (font *FontMetrics) ParseKerning(in string) error {
 	// sample: KPX f i -20
 	var a int
 	var u, v string
@@ -114,7 +114,7 @@ func (font *FontMetrics) parseKerning(in string) error {
 }
 
 // parse and entire .afm file
-func parseFontMetricsFile(file string, label string, stemv int) (font *FontMetrics, err error) {
+func ParseFontMetricsFile(file string, label string, stemv int) (font *FontMetrics, err error) {
 	contents, err := ioutil.ReadFile(file)
 	if err != nil {
 		return
@@ -153,7 +153,7 @@ func parseFontMetricsFile(file string, label string, stemv int) (font *FontMetri
 			i += 1
 			for j := 0; j < count && i < len(lines); j, i = j+1, i+1 {
 				line := strings.TrimSpace(lines[i])
-				if err = font.parseGlyph(line); err != nil {
+				if err = font.ParseGlyph(line); err != nil {
 					return
 				}
 			}
@@ -164,7 +164,7 @@ func parseFontMetricsFile(file string, label string, stemv int) (font *FontMetri
 				if line == "" {
 					continue
 				}
-				if err = font.parseKerning(line); err != nil {
+				if err = font.ParseKerning(line); err != nil {
 					return
 				}
 				j++

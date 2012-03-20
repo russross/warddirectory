@@ -134,7 +134,7 @@ func prepEmail(email, familyEmail string) string {
 	return email
 }
 
-func (dir *Directory) parseFamilies(src io.Reader) error {
+func (dir *Directory) ParseFamilies(src io.Reader) error {
 	reader := csv.NewReader(src)
 
 	// the CSV reader is picky about the number of fields being consistent
@@ -281,7 +281,7 @@ func packBox(lst []*Box, elt string, space int, font *FontMetrics) (entry []*Box
 	panic("Can't get here")
 }
 
-func (dir *Directory) formatFamilies() (err error) {
+func (dir *Directory) FormatFamilies() (err error) {
 	for _, family := range dir.Families {
 		var entry []*Box
 

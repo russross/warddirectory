@@ -283,7 +283,7 @@ func (elt *EntrySlice) Cost(a, b int, first, last bool) float64 {
 	return extralines * extralines
 }
 
-func (dir *Directory) splitIntoLines() {
+func (dir *Directory) SplitIntoLines() {
 	firstlinewidth := dir.ColumnWidth * 1000.0 / dir.FontSize
 	linewidth := firstlinewidth - dir.FirstLineDedentMultiplier*1000.0
 	for i, entry := range dir.Entries {
@@ -302,7 +302,7 @@ func (dir *Directory) splitIntoLines() {
 				width = linewidth
 			}
 
-			line = dir.simplifyLine(line, width)
+			line = dir.SimplifyLine(line, width)
 			newentry = append(newentry, line)
 		}
 
@@ -311,7 +311,7 @@ func (dir *Directory) splitIntoLines() {
 }
 
 // insert explicit spaces into a line
-func (dir *Directory) simplifyLine(boxes []*Box, linewidth float64) (simple []*Box) {
+func (dir *Directory) SimplifyLine(boxes []*Box, linewidth float64) (simple []*Box) {
 	// count up the spaces and the total line width
 	var width, spaces float64
 	for i, box := range boxes {
@@ -394,7 +394,7 @@ func (dir *Directory) simplifyLine(boxes []*Box, linewidth float64) (simple []*B
 	return
 }
 
-func (dir *Directory) renderColumns() {
+func (dir *Directory) RenderColumns() {
 	// split the list of entries into columns
 	for i, start := range dir.Columnbreaks {
 		var column [][][]*Box
@@ -404,12 +404,12 @@ func (dir *Directory) renderColumns() {
 			column = dir.Lines[start:]
 		}
 
-		text := dir.renderColumn(column, i%dir.ColumnsPerPage)
+		text := dir.RenderColumn(column, i%dir.ColumnsPerPage)
 		dir.Columns = append(dir.Columns, text)
 	}
 }
 
-func (dir *Directory) renderColumn(entries [][][]*Box, number int) string {
+func (dir *Directory) RenderColumn(entries [][][]*Box, number int) string {
 	// find the top left corner
 	x := dir.LeftMargin + (dir.ColumnWidth+dir.ColumnSep)*float64(number)
 	y := dir.BottomMargin + dir.ColumnHeight - dir.FontSize
@@ -458,7 +458,7 @@ func (dir *Directory) renderColumn(entries [][][]*Box, number int) string {
 	return rendered
 }
 
-func (dir *Directory) renderHeader() (err error) {
+func (dir *Directory) RenderHeader() (err error) {
 	var title, date, useonly *Box
 	if title, err = dir.Bold.MakeBox(dir.Title, 1.0); err != nil {
 		return
@@ -506,7 +506,7 @@ func (dir *Directory) renderHeader() (err error) {
 	return
 }
 
-func (dir *Directory) findFontSize() (err error) {
+func (dir *Directory) FindFontSize() (err error) {
 	low, high := dir.MinimumFontSize, dir.MaximumFontSize
 	finalrun := false
 	success := false
