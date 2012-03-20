@@ -80,7 +80,8 @@ var headerFields = []string{
 func prepAddress(regexps []*RegularExpression, address string) string {
 	// prepare address
 	for _, re := range regexps {
-		address = re.Regexp.ReplaceAllString(address, re.Replacement)
+		address = re.Regexp.ReplaceAllString(strings.TrimSpace(address), re.Replacement)
+		address = strings.TrimSpace(address)
 	}
 
 	return address
@@ -90,6 +91,7 @@ func prepPhone(regexps []*RegularExpression, phone, familyPhone string) string {
 	// prepare phone number
 	for _, re := range regexps {
 		phone = re.Regexp.ReplaceAllString(phone, re.Replacement)
+		phone = strings.TrimSpace(phone)
 	}
 
 	if phone == familyPhone {
