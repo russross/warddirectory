@@ -1,5 +1,5 @@
 {
-    "Title": "Diamond Valley Second Ward",
+    "Title": "Your Ward Name Goes Here",
     "Disclaimer": "For Church Use Only",
     "DateFormat": "January 2, 2006",
     "PageWidth": 612.0,
@@ -20,13 +20,7 @@
     "FirstLineDedentMultiplier": 1.61803398874989484820,
 
     "PhoneRegexps": [
-        { "Expression": "^435-", "Replacement": "" }
     ],
     "AddressRegexps": [
-        { "Expression": " \\d+(-\\d+)?$", "Replacement": "" },
-        { "Expression": ", Utah$", "Replacement": "" },
-        { "Expression": " Dammeron Valley$", "Replacement": ", Dammeron Valley" },
-        { "Expression": " St. George$", "Replacement": ", St. George" },
-        { "Expression": " Diamond Valley$", "Replacement": "" }
     ]
 }

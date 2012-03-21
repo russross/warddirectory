@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"compress/zlib"
 	"fmt"
-	"io/ioutil"
 	"time"
 )
 
@@ -72,11 +71,7 @@ func (elt *Document) WriteTrailer(info, catalog string) {
 	fmt.Fprintf(elt.out, obj_trailer, len(elt.Xref)+1, info, catalog, startxref)
 }
 
-func (elt *Document) Dump() error {
-	return ioutil.WriteFile(outputfilename, elt.out.Bytes(), 0644)
-}
-
-func (dir *Directory) MakePDF() (err error) {
+func (dir *Directory) MakePDF() (pdf []byte, err error) {
 	// make the PDF file
 	doc := NewDocument()
 
@@ -110,7 +105,7 @@ func (dir *Directory) MakePDF() (err error) {
 	roman := doc.ForwardRef(i)
 	i++
 	var romanwidths, romandescriptor, romanembedded string
-	if dir.Roman.Filename != "" {
+	if len(dir.Roman.File) > 0 {
 		romanwidths = doc.ForwardRef(i)
 		i++
 		romandescriptor = doc.ForwardRef(i)
@@ -122,7 +117,7 @@ func (dir *Directory) MakePDF() (err error) {
 	bold := doc.ForwardRef(i)
 	i++
 	var boldwidths, bolddescriptor, boldembedded string
-	if dir.Bold.Filename != "" {
+	if len(dir.Bold.File) > 0 {
 		boldwidths = doc.ForwardRef(i)
 		i++
 		bolddescriptor = doc.ForwardRef(i)
@@ -134,7 +129,7 @@ func (dir *Directory) MakePDF() (err error) {
 	typewriter := doc.ForwardRef(i)
 	i++
 	var typewriterwidths, typewriterdescriptor, typewriterembedded string
-	if dir.Typewriter.Filename != "" {
+	if len(dir.Typewriter.File) > 0 {
 		typewriterwidths = doc.ForwardRef(i)
 		i++
 		typewriterdescriptor = doc.ForwardRef(i)
@@ -147,46 +142,34 @@ func (dir *Directory) MakePDF() (err error) {
 
 	// roman font
 	doc.AddObject(makeFont(dir.Roman, romanwidths, romandescriptor))
-	if dir.Roman.Filename != "" {
+	if len(dir.Roman.File) > 0 {
 		doc.AddObject(makeWidths(dir.Roman))
 		doc.AddObject(makeFontDescriptor(dir.Roman, romanembedded))
-		var font []byte
-		if font, err = ioutil.ReadFile(dir.Roman.Filename); err != nil {
-			return
-		}
-		doc.AddStream(fmt.Sprintf(obj_font_stream, len(font), 0, 0), font)
+		doc.AddStream(fmt.Sprintf(obj_font_stream, len(dir.Roman.File), 0, 0), dir.Roman.File)
 	}
 
 	// bold font
 	doc.AddObject(makeFont(dir.Bold, boldwidths, bolddescriptor))
-	if dir.Bold.Filename != "" {
+	if len(dir.Bold.File) > 0 {
 		doc.AddObject(makeWidths(dir.Bold))
 		doc.AddObject(makeFontDescriptor(dir.Bold, boldembedded))
-		var font []byte
-		if font, err = ioutil.ReadFile(dir.Bold.Filename); err != nil {
-			return
-		}
-		doc.AddStream(fmt.Sprintf(obj_font_stream, len(font), 0, 0), font)
+		doc.AddStream(fmt.Sprintf(obj_font_stream, len(dir.Bold.File), 0, 0), dir.Bold.File)
 	}
 
 	// typewriter font
 	doc.AddObject(makeFont(dir.Typewriter, typewriterwidths, typewriterdescriptor))
-	if dir.Typewriter.Filename != "" {
+	if len(dir.Typewriter.File) > 0 {
 		doc.AddObject(makeWidths(dir.Typewriter))
 		doc.AddObject(makeFontDescriptor(dir.Typewriter, typewriterembedded))
-		var font []byte
-		if font, err = ioutil.ReadFile(dir.Typewriter.Filename); err != nil {
-			return
-		}
-		doc.AddStream(fmt.Sprintf(obj_font_stream, len(font), 0, 0), font)
+		doc.AddStream(fmt.Sprintf(obj_font_stream, len(dir.Typewriter.File), 0, 0), dir.Typewriter.File)
 	}
 
 	doc.WriteTrailer(info, catalog)
-	return doc.Dump()
+	return doc.out.Bytes(), nil
 }
 
 func makeFont(font *FontMetrics, widths, descriptor string) string {
-	if font.Filename == "" {
+	if len(font.File) == 0 {
 		return fmt.Sprintf(obj_font_builtin, "/"+font.Name)
 	}
 	return fmt.Sprintf(obj_font,

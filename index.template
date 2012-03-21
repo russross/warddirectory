@@ -1,0 +1,70 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+<title>Ward Directory Generator</title>
+</head>
+
+<body>
+<div id="header">
+<h1>Ward Directory Generator</h1>
+</div>
+
+<div id="maincolumn">
+<h2>Convert a .csv input file</h2>
+<form method="post" action="/generate" enctype="multipart/form-data">
+  <input type="file" name="MembershipData"></input>
+  <input type="submit" value="Generate"></input>
+</form>
+
+<h2>Formatting Details</h2>
+<form method="post" action="/save">
+  <p><label for="Title">Title</label><input type="text" name="Title" value="{{.Title | html}}"></input></p>
+  <p><label for="Disclaimer">Disclaimer</label><input type="text" name="Disclaimer" value="{{.Disclaimer | html}}"></input></p>
+  <p><label for="DateFormat">Date format</label><input type="text" name="DateFormat" value="{{.DateFormat | html}}"></input></p>
+  <p><label for="PageWidth">PageWidth</label><input type="text" name="PageWidth" value="{{.PageWidth | html}}"></input></p>
+  <p><label for="PageHeight">PageHeight</label><input type="text" name="PageHeight" value="{{.PageHeight | html}}"></input></p>
+  <p><label for="TopMargin">TopMargin</label><input type="text" name="TopMargin" value="{{.TopMargin | html}}"></input></p>
+  <p><label for="BottomMargin">BottomMargin</label><input type="text" name="BottomMargin" value="{{.BottomMargin | html}}"></input></p>
+  <p><label for="LeftMargin">LeftMargin</label><input type="text" name="LeftMargin" value="{{.LeftMargin | html}}"></input></p>
+  <p><label for="RightMargin">RightMargin</label><input type="text" name="RightMargin" value="{{.RightMargin | html}}"></input></p>
+  <p><label for="ColumnsPerPage">ColumnsPerPage</label><input type="text" name="ColumnsPerPage" value="{{.ColumnsPerPage | html}}"></input></p>
+  <p><label for="ColumnSep">ColumnSep</label><input type="text" name="ColumnSep" value="{{.ColumnSep | html}}"></input></p>
+  <p><label for="LeadingMultiplier">LeadingMultiplier</label><input type="text" name="LeadingMultiplier" value="{{.LeadingMultiplier | html}}"></input></p>
+  <p><label for="MinimumFontSize">MinimumFontSize</label><input type="text" name="MinimumFontSize" value="{{.MinimumFontSize | html}}"></input></p>
+  <p><label for="MaximumFontSize">MaximumFontSize</label><input type="text" name="MaximumFontSize" value="{{.MaximumFontSize | html}}"></input></p>
+  <p><label for="MinimumSpaceMultiplier">MinimumSpaceMultiplier</label><input type="text" name="MinimumSpaceMultiplier" value="{{.MinimumSpaceMultiplier | html}}"></input></p>
+  <p><label for="MinimumLineHeightMultiplier">MinimumLineHeightMultiplier</label><input type="text" name="MinimumLineHeightMultiplier" value="{{.MinimumLineHeightMultiplier | html}}"></input></p>
+  <p><label for="FontSizePrecision">FontSizePrecision</label><input type="text" name="FontSizePrecision" value="{{.FontSizePrecision | html}}"></input></p>
+  <p><label for="TitleFontMultiplier">TitleFontMultiplier</label><input type="text" name="TitleFontMultiplier" value="{{.TitleFontMultiplier | html}}"></input></p>
+  <p><label for="FirstLineDedentMultiplier">FirstLineDedentMultiplier</label><input type="text" name="FirstLineDedentMultiplier" value="{{.FirstLineDedentMultiplier | html}}"></input></p>
+
+<h3>Phone formatting</h3>
+{{range $i, $elt := .PhoneRegexps}}
+  <p>
+    <label for="PhoneRegexps.{{$i}}.Expression">Expression</label><input type="text" name="PhoneRegexps.{{$i}}.Expression" value="{{$elt.Expression | html}}"</input>
+    <label for="PhoneRegexps.{{$i}}.Replacement">Replacement</label><input type="text" name="PhoneRegexps.{{$i}}.Replacement" value="{{$elt.Replacement | html}}"</input>
+  </p>{{end}}
+
+<h3>Address formatting</h3>
+{{range $i, $elt := .AddressRegexps}}
+  <p>
+    <label for="AddressRegexps.{{$i}}.Expression">Expression</label><input type="text" name="AddressRegexps.{{$i}}.Expression" value="{{$elt.Expression | html}}"</input>
+    <label for="AddressRegexps.{{$i}}.Replacement">Replacement</label><input type="text" name="AddressRegexps.{{$i}}.Replacement" value="{{$elt.Replacement | html}}"</input>
+  </p>{{end}}
+  <p>
+    <input type="submit" name="SubmitButton" value="Save">
+    <input type="submit" name="SubmitButton" value="Download">
+    <input type="submit" name="SubmitButton" value="Delete">
+  </p>
+</form>
+
+<h2>Upload a configuration</h2>
+<form method="post" action="/upload" enctype="multipart/form-data">
+  <input type="file" name="DirectoryConfig"></input>
+  <input type="submit" value="Upload"></input>
+</form>
+</div>
+</body>
+</html>
+

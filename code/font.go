@@ -29,11 +29,10 @@ type GlyphMetrics struct {
 type FontMetrics struct {
 	Name        string
 	Label       string
-	Filename    string
+	File        []byte
 	CapHeight   int
 	Glyphs      map[string]*GlyphMetrics
 	Lookup      map[rune]string
-	Extras      map[rune]string
 	FirstChar   rune
 	LastChar    rune
 	Flags       int
@@ -277,4 +276,18 @@ func ParseFontMetricsFile(file string, label string, stemv int) (font *FontMetri
 	}
 
 	return
+}
+
+func (font *FontMetrics) Copy() *FontMetrics {
+	elt := new(FontMetrics)
+	*elt = *font
+	elt.Lookup = make(map[rune]string)
+	for _, glyph := range elt.Glyphs {
+		if glyph.Code > 0 {
+			elt.Lookup[glyph.Code] = glyph.Name
+		}
+	}
+	elt.FirstChar = 0
+	elt.LastChar = 0
+	return elt
 }
