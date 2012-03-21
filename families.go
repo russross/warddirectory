@@ -109,6 +109,8 @@ func prepEmail(email, familyEmail string) string {
 	return email
 }
 
+var Spaces = regexp.MustCompile(`\s+`)
+
 func (dir *Directory) ParseFamilies(src io.Reader) error {
 	reader := csv.NewReader(src)
 
@@ -138,6 +140,7 @@ func (dir *Directory) ParseFamilies(src io.Reader) error {
 	reader.TrailingComma = true
 	for fields, err = reader.Read(); err == nil; fields, err = reader.Read() {
 		for i, elt := range fields {
+			elt = Spaces.ReplaceAllString(elt, " ")
 			fields[i] = strings.TrimSpace(elt)
 		}
 

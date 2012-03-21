@@ -35,23 +35,23 @@
     ],
     "AddressRegexps": [
         {
-            "Expression": " +\\d+(-\\d+)?$",
+            "Expression": " \\d+(-\\d+)?$",
             "Replacement": ""
         },
         {
-            "Expression": ", +Utah$",
+            "Expression": ", Utah$",
             "Replacement": ""
         },
         {
-            "Expression": " +Dammeron +Valley$",
+            "Expression": " Dammeron Valley$",
             "Replacement": ", Dammeron Valley"
         },
         {
-            "Expression": " +St. George$",
+            "Expression": " St. George$",
             "Replacement": ", St. George"
         },
         {
-            "Expression": " +Diamond +Valley$",
+            "Expression": " Diamond Valley$",
             "Replacement": ""
         }
     ]
