@@ -21,14 +21,6 @@
 
     "PhoneRegexps": [
         {
-            "Expression": "^\\D*(\\d{3})\\D*(\\d{3})\\D*(\\d{4})\\D*$",
-            "Replacement": "$1-$2-$3"
-        },
-        {
-            "Expression": "^\\D*(\\d{3})\\D*(\\d{4})\\D*$",
-            "Replacement": "$1-$2"
-        },
-        {
             "Expression": "^435-",
             "Replacement": ""
         }

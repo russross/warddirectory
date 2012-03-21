@@ -87,8 +87,17 @@ func prepAddress(regexps []*RegularExpression, address string) string {
 	return address
 }
 
+var Phone10Digit = regexp.MustCompile(`^\D*(\d{3})\D*(\d{3})\D*(\d{4})\D*$`)
+var Phone7Digit = regexp.MustCompile(`^\D*(\d{3})\D*(\d{4})\D*$`)
+
+// prepare phone number
 func prepPhone(regexps []*RegularExpression, phone, familyPhone string) string {
-	// prepare phone number
+	// first extract groups of digits and put it in the form 123-456-7890
+	phone = Phone10Digit.ReplaceAllString(phone, "$1-$2-$3")
+
+	// same for 123-4567
+	phone = Phone7Digit.ReplaceAllString(phone, "$1-$2")
+
 	for _, re := range regexps {
 		phone = re.Regexp.ReplaceAllString(phone, re.Replacement)
 		phone = strings.TrimSpace(phone)
