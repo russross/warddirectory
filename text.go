@@ -21,7 +21,7 @@ func (font *FontMetrics) MakeBox(text string, spacecompress float64) (box *Box, 
 	// find the list of glyphs, merging ligatures when possible
 	var glyphs []*GlyphMetrics
 	for _, ch := range text {
-		name, present := font.Lookup[int(ch)]
+		name, present := font.Lookup[ch]
 		if !present {
 			msg := fmt.Sprintf("MakeBox: Unknown character: [%c] with code %d", ch, int(ch))
 			return nil, errors.New(msg)
