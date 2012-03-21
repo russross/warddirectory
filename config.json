@@ -20,31 +20,13 @@
     "FirstLineDedentMultiplier": 1.61803398874989484820,
 
     "PhoneRegexps": [
-        {
-            "Expression": "^435-",
-            "Replacement": ""
-        }
+        { "Expression": "^435-", "Replacement": "" }
     ],
     "AddressRegexps": [
-        {
-            "Expression": " \\d+(-\\d+)?$",
-            "Replacement": ""
-        },
-        {
-            "Expression": ", Utah$",
-            "Replacement": ""
-        },
-        {
-            "Expression": " Dammeron Valley$",
-            "Replacement": ", Dammeron Valley"
-        },
-        {
-            "Expression": " St. George$",
-            "Replacement": ", St. George"
-        },
-        {
-            "Expression": " Diamond Valley$",
-            "Replacement": ""
-        }
+        { "Expression": " \\d+(-\\d+)?$", "Replacement": "" },
+        { "Expression": ", Utah$", "Replacement": "" },
+        { "Expression": " Dammeron Valley$", "Replacement": ", Dammeron Valley" },
+        { "Expression": " St. George$", "Replacement": ", St. George" },
+        { "Expression": " Diamond Valley$", "Replacement": "" }
     ]
 }
