@@ -4,6 +4,10 @@ runtime: go
 api_version: go1beta
 
 handlers:
+- url: /site.css
+  static_files: site.css
+  upload: site.css
+
 - url: /.*
   login: required
   script: _go_app

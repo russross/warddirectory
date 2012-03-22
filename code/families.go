@@ -81,6 +81,7 @@ func prepAddress(regexps []*RegularExpression, address string) string {
 	// prepare address
 	for _, re := range regexps {
 		address = re.Regexp.ReplaceAllString(strings.TrimSpace(address), re.Replacement)
+		address = Spaces.ReplaceAllString(address, " ")
 		address = strings.TrimSpace(address)
 	}
 
@@ -100,6 +101,7 @@ func prepPhone(regexps []*RegularExpression, phone, familyPhone string) string {
 
 	for _, re := range regexps {
 		phone = re.Regexp.ReplaceAllString(phone, re.Replacement)
+		phone = Spaces.ReplaceAllString(phone, " ")
 		phone = strings.TrimSpace(phone)
 	}
 

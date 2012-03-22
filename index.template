@@ -3,6 +3,8 @@
 <head>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
 <title>Ward Directory Generator</title>
+<link href="/site.css" type="text/css" rel="stylesheet"
+title="site"></link>
 </head>
 
 <body>
@@ -11,47 +13,247 @@
 </div>
 
 <div id="maincolumn">
-<h2>Convert a .csv input file</h2>
+<p>This app generates a printable list of families for an LDS ward.
+It uses the CSV data downloaded from an lds.org account and
+processes it into a PDF file that fits everything on two pages (a
+single double-sided sheet of paper).</p>
+
+<p>To use it, you must first download the directory information for
+your ward.  Follow this link:</p>
+
+<ul><li><a href="https://lds.org/directory/">https://lds.org/directory/</a></li></ul>
+
+<p>You will need to log in using your lds.org ID. It should take you
+to a screen with your ward directory listed. On the left side, find
+a link that says “Export Households” and click on it. It will pop up
+a box and let you download a file.  Download the file and take note
+of where it is saved.</p>
+
 <form method="post" action="/generate" enctype="multipart/form-data">
-  <input type="file" name="MembershipData"></input>
-  <input type="submit" value="Generate"></input>
+<p>Next, come back here and click on this button:
+<input type="file" name="MembershipData"></input></p>
+
+<p>Find the file you downloaded (the name is your unit number
+followed by .csv, although your operating system may hide the .csv
+part).</p>
+
+<p>Finally, click on this button:
+<input type="submit" value="Generate"></input></p>
 </form>
 
-<h2>Formatting Details</h2>
+<p>This will generate the ward directory PDF file and automatically
+start downloading it.</p>
+
+<p>Print this on a single sheet of paper and hand out to your ward
+members. It is simple enough that you can print up new ones every
+few months and hand them out at the beginning of sacrament
+meeting.</p>
+
+<p>If your printer/copier does not do double sided printing,
+print one side first, then turn the stack of paper over and print
+the other side. Practice it with one or two sheets to see how it
+needs to be placed in your printer.</p>
+
+<h1>Formatting Details</h1>
+
 <form method="post" action="/save">
+
+<p>You can customize the output. Start by putting the name of your
+ward here so it will be displayed correctly:</p>
+
   <p><label for="Title">Title</label><input type="text" name="Title" value="{{.Title | html}}"></input></p>
-  <p><label for="Disclaimer">Disclaimer</label><input type="text" name="Disclaimer" value="{{.Disclaimer | html}}"></input></p>
+
+<p>Click on the “Save” button near the bottom of the page, then go
+back up and upload your membership data again to generate a new
+version. You do not need to download the data from lds.org
+again.</p>
+
+<p>For most of these next settings, the default values should work
+well for most people.</p>
+
   <p><label for="DateFormat">Date format</label><input type="text" name="DateFormat" value="{{.DateFormat | html}}"></input></p>
-  <p><label for="PageWidth">PageWidth</label><input type="text" name="PageWidth" value="{{.PageWidth | html}}"></input></p>
-  <p><label for="PageHeight">PageHeight</label><input type="text" name="PageHeight" value="{{.PageHeight | html}}"></input></p>
-  <p><label for="TopMargin">TopMargin</label><input type="text" name="TopMargin" value="{{.TopMargin | html}}"></input></p>
-  <p><label for="BottomMargin">BottomMargin</label><input type="text" name="BottomMargin" value="{{.BottomMargin | html}}"></input></p>
-  <p><label for="LeftMargin">LeftMargin</label><input type="text" name="LeftMargin" value="{{.LeftMargin | html}}"></input></p>
-  <p><label for="RightMargin">RightMargin</label><input type="text" name="RightMargin" value="{{.RightMargin | html}}"></input></p>
-  <p><label for="ColumnsPerPage">ColumnsPerPage</label><input type="text" name="ColumnsPerPage" value="{{.ColumnsPerPage | html}}"></input></p>
-  <p><label for="ColumnSep">ColumnSep</label><input type="text" name="ColumnSep" value="{{.ColumnSep | html}}"></input></p>
-  <p><label for="LeadingMultiplier">LeadingMultiplier</label><input type="text" name="LeadingMultiplier" value="{{.LeadingMultiplier | html}}"></input></p>
-  <p><label for="MinimumFontSize">MinimumFontSize</label><input type="text" name="MinimumFontSize" value="{{.MinimumFontSize | html}}"></input></p>
-  <p><label for="MaximumFontSize">MaximumFontSize</label><input type="text" name="MaximumFontSize" value="{{.MaximumFontSize | html}}"></input></p>
-  <p><label for="MinimumSpaceMultiplier">MinimumSpaceMultiplier</label><input type="text" name="MinimumSpaceMultiplier" value="{{.MinimumSpaceMultiplier | html}}"></input></p>
-  <p><label for="MinimumLineHeightMultiplier">MinimumLineHeightMultiplier</label><input type="text" name="MinimumLineHeightMultiplier" value="{{.MinimumLineHeightMultiplier | html}}"></input></p>
-  <p><label for="FontSizePrecision">FontSizePrecision</label><input type="text" name="FontSizePrecision" value="{{.FontSizePrecision | html}}"></input></p>
-  <p><label for="TitleFontMultiplier">TitleFontMultiplier</label><input type="text" name="TitleFontMultiplier" value="{{.TitleFontMultiplier | html}}"></input></p>
-  <p><label for="FirstLineDedentMultiplier">FirstLineDedentMultiplier</label><input type="text" name="FirstLineDedentMultiplier" value="{{.FirstLineDedentMultiplier | html}}"></input></p>
 
-<h3>Phone formatting</h3>
+<p>To change the date format, just change the example in this box.
+You should be formatting the same example date, i.e., January 2,
+2006, but you can write it different ways. For example: 1/2/06,
+2006/01/02, 2 January 2006, etc.</p>
+
+  <p><label for="Disclaimer">Disclaimer</label><input type="text" name="Disclaimer" value="{{.Disclaimer | html}}"></input></p>
+
+<p>All of the measurements are given in <em>points</em>. A point is
+<sup>1</sup>&frasl;<sub>72</sub> of an inch. The default page size
+is 8.5&times;11. If you want it printed landscape, just swap these
+two numbers.</p>
+
+  <p><label for="PageWidth">Page width</label><input type="text" name="PageWidth" value="{{.PageWidth | html}}"></input></p>
+  <p><label for="PageHeight">Page height</label><input type="text" name="PageHeight" value="{{.PageHeight | html}}"></input></p>
+
+<p>The default top margin is 1 inch. The ward name and other info at
+the top is printed in the top margin, so plan a little extra space
+for it.</p>
+
+  <p><label for="TopMargin">Top margin</label><input type="text" name="TopMargin" value="{{.TopMargin | html}}"></input></p>
+
+<p>The default bottom margin is <sup>3</sup>&frasl;<sub>4</sub>
+inch.</p>
+
+  <p><label for="BottomMargin">Bottom margin</label><input type="text" name="BottomMargin" value="{{.BottomMargin | html}}"></input></p>
+
+<p>The left and right margins default to
+<sup>1</sup>&frasl;<sub>2</sub> inch.</p>
+
+  <p><label for="LeftMargin">Left margin</label><input type="text" name="LeftMargin" value="{{.LeftMargin | html}}"></input></p>
+  <p><label for="RightMargin">Right margin</label><input type="text" name="RightMargin" value="{{.RightMargin | html}}"></input></p>
+
+<p>The number of columns per page defaults to 2. If you have a
+really small ward, a single column may work well. For really big
+wards, or if you are printing in landscape format, 3 or more might
+work.</p>
+
+  <p><label for="ColumnsPerPage">Columns per page</label><input type="text" name="ColumnsPerPage" value="{{.ColumnsPerPage | html}}"></input></p>
+
+<p>The space between columns defaults to 10 points, roughly
+<sup>1</sup>&frasl;<sub>6</sub> inch.
+
+  <p><label for="ColumnSep">Space between columns</label><input type="text" name="ColumnSep" value="{{.ColumnSep | html}}"></input></p>
+
+<p>This controls the spacing between lines. Bigger numbers increase
+the space, smaller numbers squish the lines together. 1.2 is the
+default. 1 would be tight single spacing, 2 would be double spacing,
+etc.</p>
+
+  <p><label for="LeadingMultiplier">Leading multiplier</label><input type="text" name="LeadingMultiplier" value="{{.LeadingMultiplier | html}}"></input></p>
+
+<p>The app automatically finds the biggest font size that will allow
+everything to fit on two pages. It only searches between these two
+font sizes.</p>
+
+  <p><label for="MinimumFontSize">Minimum font Size</label><input type="text" name="MinimumFontSize" value="{{.MinimumFontSize | html}}"></input></p>
+  <p><label for="MaximumFontSize">Maximum font size</label><input type="text" name="MaximumFontSize" value="{{.MaximumFontSize | html}}"></input></p>
+
+<p>Sometimes it is useful to squish the spaces in a line to make one
+more word fit. This is the smallest a space is allowed to get, as a
+fraction of the normal size.</p>
+
+  <p><label for="MinimumSpaceMultiplier">Minimum space multiplier</label><input type="text" name="MinimumSpaceMultiplier" value="{{.MinimumSpaceMultiplier | html}}"></input></p>
+
+<p>Similarly, lines are sometimes squished together a bit more to
+fit an extra line or two in a column. This is the smallest fraction
+of the normal size allowed (with leading already factored in).</p>
+
+  <p><label for="MinimumLineHeightMultiplier">Minimum line height multiplier</label><input type="text" name="MinimumLineHeightMultiplier" value="{{.MinimumLineHeightMultiplier | html}}"></input></p>
+
+<p>This controls how picky it is about the font size. It will keep
+searching until it finds the best font size to this precision. You
+should not need to modify this value, and it cannot go below
+0.0001.</p>
+
+  <p><label for="FontSizePrecision">Font size precision</label><input type="text" name="FontSizePrecision" value="{{.FontSizePrecision | html}}"></input></p>
+
+<p>The ward name is displayed in a font that is larger than the rest
+of the text by this multiple. It defaults to &radic;2.</p>
+
+  <p><label for="TitleFontMultiplier">Title font multiplier</label><input type="text" name="TitleFontMultiplier" value="{{.TitleFontMultiplier | html}}"></input></p>
+
+<p>Each line after the first line in a family is indented by this
+much, as a multiple of the font size. The default is the golden
+ratio.</p>
+
+  <p><label for="FirstLineDedentMultiplier">Indent after first line multiplier</label><input type="text" name="FirstLineDedentMultiplier" value="{{.FirstLineDedentMultiplier | html}}"></input></p>
+
+<h2>Phone formatting</h2>
+
+<p>Here you can perform search and replace adjustments to all phone
+numbers. An attempt is already made to standardize the numbers to a
+123-456-7890 format (or 123-4567 if there is no area code). The most
+useful change to make here is to remove the default area code from
+phone numbers that have it. For example, if your ward is in the 435
+area code, you could remove it by searching for “^435-” and
+replacing it with nothing (note that you should note include the
+quotation marks). The ^ symbol at the beginning forces it to only
+match 435- at the beginning of the a phone number, not in the
+middle.</p>
+
+<p>If you have multiple search and replace pairs, they will be
+performed in order. All changes will be performed on individual as
+well as family phone numbers.</p>
+
+<p>The search terms are <em>regular expressions</em>, which permit
+a lot of flexibility if you know how to use them. A few quick
+tips:</p>
+
+<ul>
+<li>^ forces the match to only occur at the beginning of the phone
+number.</li>
+<li>$ at the end forces it to only match at the end.</li>
+<li>If you want to match parentheses, you must write \( and \),
+i.e., put a backslash in front of each one.</li>
+<li>If you put parentheses without backslashes around something, it
+remembers whatever is matched between the parentheses. The first
+thing that you match can then be put into the replacement string
+using $1, the second matched items using $2, etc.</li>
+<li>\d matches a digit. \d* matches zero or more digits. \d+ matches
+1 or more digits. \d{<i>n</i>} matches exactly <i>n</i> digits.</li>
+</ul>
+
+<p>So if you prefer your numbers formatted as (123)456-7890, you
+could search for “<tt>^(\d{3})-(\d{3})-(\d{4})$</tt>” and replace it with
+“<tt>($1)$2-$3</tt>”. For more information, search on the web for regular
+expression tutorials.</p>
+
 {{range $i, $elt := .PhoneRegexps}}
-  <p>
-    <label for="PhoneRegexps.{{$i}}.Expression">Expression</label><input type="text" name="PhoneRegexps.{{$i}}.Expression" value="{{$elt.Expression | html}}"</input>
-    <label for="PhoneRegexps.{{$i}}.Replacement">Replacement</label><input type="text" name="PhoneRegexps.{{$i}}.Replacement" value="{{$elt.Replacement | html}}"</input>
-  </p>{{end}}
+  <p><label for="PhoneRegexps.{{$i}}.Expression">Search for</label><input type="text" name="PhoneRegexps.{{$i}}.Expression" value="{{$elt.Expression | html}}"></input></p>
+  <p><label for="PhoneRegexps.{{$i}}.Replacement">Replace with</label><input type="text" name="PhoneRegexps.{{$i}}.Replacement" value="{{$elt.Replacement | html}}"></input></p>{{end}}
+<p><a id="morephone" href="#">Click here to add another search/replace pair</a>.
+Leave a pair blank to delete it.</p>
+<input type="hidden" id="nextphone" value="{{len .PhoneRegexps}}"></input>
 
-<h3>Address formatting</h3>
+<h2>Address formatting</h2>
+
+<p>Addresses can also be adjusted using regular expression matching.
+Here are a few examples that may be helpful:</p>
+
+<ul>
+<li>“<tt> (\d{5})(-\d{4})?$</tt>” replaced with nothing (note the space at
+the beginning, and again remember to omit the quotation marks). This
+matches a zip code at the end of the address and gets rid of it.
+Useful if everyone is in the same zip code. The ? mark means that
+everything in the parentheses before it is optional, so it works for
+5- and 9-digit zip codes. Use “$1” as the replacement to just trim
+all 9-digit zip codes down to 5 digits.</li>
+<li>“<tt> 84770$</tt>” replaced with nothing (again, note the space
+at the beginning) to only clear the zip code if it is 84770. Leaves
+other zip codes untouched.</li>
+<li>“<tt>, Utah$</tt>” replaced with nothing to delete the state at
+the end (use this after deleting zip codes) but only if the state is
+Utah.</li>
+<li>After removing the state, use something similar to get rid of
+the city if most of your members are in one city. Or change it to an
+abbreviated form, for example: “<tt> Salt Lake City$</tt>” to
+“<tt> SLC</tt>”.
+</ul>
+
 {{range $i, $elt := .AddressRegexps}}
-  <p>
-    <label for="AddressRegexps.{{$i}}.Expression">Expression</label><input type="text" name="AddressRegexps.{{$i}}.Expression" value="{{$elt.Expression | html}}"</input>
-    <label for="AddressRegexps.{{$i}}.Replacement">Replacement</label><input type="text" name="AddressRegexps.{{$i}}.Replacement" value="{{$elt.Replacement | html}}"</input>
-  </p>{{end}}
+  <p><label for="AddressRegexps.{{$i}}.Expression">Search for</label><input type="text" name="AddressRegexps.{{$i}}.Expression" value="{{$elt.Expression | html}}"></input></p>
+  <p><label for="AddressRegexps.{{$i}}.Replacement">Replace with</label><input type="text" name="AddressRegexps.{{$i}}.Replacement" value="{{$elt.Replacement | html}}"></input></p>{{end}}
+<p><a id="moreaddress" href="#">Click here to add another search/replace pair</a>.
+Leave a pair blank to delete it.</p>
+<input type="hidden" id="nextaddress" value="{{len .AddressRegexps}}"></input>
+
+<p>Be sure to save the changes you make. They will be there next
+time you come to print and updated directory. They will be saved
+under your email address. You must save before running the generator
+or your changes will be lost.</p>
+
+<p>If you would rather not have your setup saved, you can click on
+the delete button below to reset everything. THIS IS PERMANENT.</p>
+
+<p>If you would like to save your settings on your own computer, or
+move them to another account, click on the Download button to
+download a .json file with all of your settings in it. You can
+upload it later or give it to someone else to upload so they can
+create directories.</p>
+
   <p>
     <input type="submit" name="SubmitButton" value="Save">
     <input type="submit" name="SubmitButton" value="Download">
@@ -59,12 +261,48 @@
   </p>
 </form>
 
-<h2>Upload a configuration</h2>
+<h1>Upload a configuration</h1>
+
+<p>If you have downloaded your settings using the button above, you
+can upload them again here. Click the first button, find the file,
+then click “Upload” to upload and save your settings under your
+account.</p>
+
 <form method="post" action="/upload" enctype="multipart/form-data">
   <input type="file" name="DirectoryConfig"></input>
   <input type="submit" value="Upload"></input>
 </form>
 </div>
+
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+<script type="text/javascript">
+jQuery(function ($) {
+    $('#morephone').click(function () {
+        var n = $('#nextphone').val();
+        $('#nextphone').val(Number(n)+1);
+        var s = '<p><label for="PhoneRegexps.' + n +
+            '.Expression">Search for</label><input type="text" name="PhoneRegexps.' + n +
+            '.Expression" value=""></input></p>';
+        s += '<p><label for="PhoneRegexps.' + n +
+            '.Replacement">Replace with</label><input type="text" name="PhoneRegexps.' + n +
+            '.Replacement" value=""></input></p>';
+        $('#morephone').parent().before(s);
+        return false;
+    });
+    $('#moreaddress').click(function () {
+        var n = $('#nextaddress').val();
+        $('#nextaddress').val(Number(n)+1);
+        var s = '<p><label for="AddressRegexps.' + n +
+            '.Expression">Search for</label><input type="text" name="AddressRegexps.' + n +
+            '.Expression" value=""></input></p>';
+        s += '<p><label for="AddressRegexps.' + n +
+            '.Replacement">Replace with</label><input type="text" name="AddressRegexps.' + n +
+            '.Replacement" value=""></input></p>';
+        $('#moreaddress').parent().before(s);
+        return false;
+    });
+});
+</script>
 </body>
 </html>
 

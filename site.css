@@ -1,0 +1,39 @@
+body {
+  font-family: Georgia,Verdana,Sans-serif;
+  background: darkblue;
+  margin: 5px;
+}
+
+h1, h2 {
+  font-weight: bold;
+  margin-top: 1.25em;
+}
+
+h1:first-child { margin-top: 5px; }
+p:first-child { margin-top: 5px; }
+
+div#header {
+  padding-bottom: 1em;
+}
+div#header h1 {
+  font-size: 300%;
+  margin-bottom: 0;
+}
+
+div {
+  width: 768px;
+  margin: 0 auto;
+  padding: 1em;
+  background: white;
+  border: 2px solid black;
+}
+
+label {
+  padding-left: 2em;
+  font-weight: bold;
+}
+
+input[type=text] {
+  width: 50%;
+  float: right;
+}

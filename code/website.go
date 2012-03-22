@@ -38,7 +38,7 @@ func init() {
 
 	// now load the templates
 	t = new(template.Template)
-	template.Must(t.ParseGlob("*.template"))
+	template.Must(t.ParseFiles("index.template"))
 
 	// load the default config file
 	var raw []byte
@@ -75,7 +75,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 	err := datastore.Get(c, key, config)
 	if err == datastore.ErrNoSuchEntity {
 		// use default values
-		config = defaultConfig
+		*config = *defaultConfig
 	} else if err != nil {
 		http.Error(w, "Failure loading config data from datastore: "+err.Error(),
 			http.StatusInternalServerError)
@@ -83,6 +83,10 @@ func index(w http.ResponseWriter, r *http.Request) {
 	} else {
 		config.FromDatastore()
 	}
+
+	// append a blank phone regexp and a blank address regexp
+	config.PhoneRegexps = append(config.PhoneRegexps, &RegularExpression{})
+	config.AddressRegexps = append(config.AddressRegexps, &RegularExpression{})
 
 	tmpl := t.Lookup("index.template")
 	tmpl.Execute(w, config)
@@ -156,8 +160,7 @@ func generate(w http.ResponseWriter, r *http.Request) {
 	dir := new(Directory)
 	err := datastore.Get(c, key, dir)
 	if err == datastore.ErrNoSuchEntity {
-		http.Error(w, "Must save configuration first", http.StatusBadRequest)
-		return
+		*dir = *defaultConfig
 	} else if err != nil {
 		http.Error(w, "Failure loading config data from datastore: "+err.Error(),
 			http.StatusInternalServerError)

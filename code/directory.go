@@ -7,6 +7,7 @@ package main
 import (
 	"encoding/json"
 	"regexp"
+	"strings"
 )
 
 const (
@@ -31,8 +32,8 @@ type RegularExpression struct {
 type Directory struct {
 	// configured values
 	Title                       string
-	Disclaimer                  string
 	DateFormat                  string
+	Disclaimer                  string
 	PageWidth                   float64
 	PageHeight                  float64
 	TopMargin                   float64
@@ -104,12 +105,20 @@ func (dir *Directory) ToDatastore() {
 	dir.PhoneExpressions = nil
 	dir.PhoneReplacements = nil
 	for _, re := range dir.PhoneRegexps {
+		if strings.TrimSpace(re.Expression) == "" {
+			// skip empty regexps
+			continue
+		}
 		dir.PhoneExpressions = append(dir.PhoneExpressions, re.Expression)
 		dir.PhoneReplacements = append(dir.PhoneReplacements, re.Replacement)
 	}
 	dir.AddressExpressions = nil
 	dir.AddressReplacements = nil
 	for _, re := range dir.AddressRegexps {
+		if strings.TrimSpace(re.Expression) == "" {
+			// skip empty regexps
+			continue
+		}
 		dir.AddressExpressions = append(dir.AddressExpressions, re.Expression)
 		dir.AddressReplacements = append(dir.AddressReplacements, re.Replacement)
 	}
@@ -129,6 +138,9 @@ func (dir *Directory) Prepare(roman, bold, typewriter *FontMetrics) {
 	dir.ColumnHeight = dir.PageHeight
 	dir.ColumnHeight -= dir.TopMargin
 	dir.ColumnHeight -= dir.BottomMargin
+	if dir.MinimumFontSize < 0.0001 {
+		dir.MinimumFontSize = 0.0001
+	}
 }
 
 func NewDirectory(config []byte, roman, bold, typewriter *FontMetrics) (dir *Directory, err error) {
@@ -136,19 +148,7 @@ func NewDirectory(config []byte, roman, bold, typewriter *FontMetrics) (dir *Dir
 	if err = json.Unmarshal(config, dir); err != nil {
 		return
 	}
-	dir.Roman = roman.Copy()
-	dir.Bold = bold.Copy()
-	dir.Typewriter = typewriter.Copy()
 
-	dir.ColumnCount = dir.ColumnsPerPage * 2
-	dir.ColumnWidth = dir.PageWidth
-	dir.ColumnWidth -= dir.LeftMargin
-	dir.ColumnWidth -= dir.RightMargin
-	dir.ColumnWidth -= dir.ColumnSep * float64(dir.ColumnsPerPage-1)
-	dir.ColumnWidth /= float64(dir.ColumnsPerPage)
-	dir.ColumnHeight = dir.PageHeight
-	dir.ColumnHeight -= dir.TopMargin
-	dir.ColumnHeight -= dir.BottomMargin
-
+	dir.Prepare(roman, bold, typewriter)
 	return
 }
