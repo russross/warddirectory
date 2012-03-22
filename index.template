@@ -82,26 +82,27 @@ You should be formatting the same example date, i.e., January 2,
   <p><label for="Disclaimer">Disclaimer</label><input type="text" name="Disclaimer" value="{{.Disclaimer | html}}"></input></p>
 
 <p>All of the measurements are given in <em>points</em>. A point is
-<sup>1</sup>&frasl;<sub>72</sub> of an inch. The default page size
-is 8.5&times;11. If you want it printed landscape, just swap these
-two numbers.</p>
+<sup>1</sup>&frasl;<sub>72</sub>&nbsp;inch. The default page size
+is 8.5&times;11&nbsp;inches. If you want it printed landscape, just
+swap these two numbers. If you use A4 paper, the dimensions are
+595.276&times;841.89&nbsp;points.</p>
 
   <p><label for="PageWidth">Page width</label><input type="text" name="PageWidth" value="{{.PageWidth | html}}"></input></p>
   <p><label for="PageHeight">Page height</label><input type="text" name="PageHeight" value="{{.PageHeight | html}}"></input></p>
 
-<p>The default top margin is 1 inch. The ward name and other info at
-the top is printed in the top margin, so plan a little extra space
-for it.</p>
+<p>The default top margin is 1&nbsp;inch. The ward name and other
+info at the top is printed in the top margin, so plan a little extra
+space for it.</p>
 
   <p><label for="TopMargin">Top margin</label><input type="text" name="TopMargin" value="{{.TopMargin | html}}"></input></p>
 
-<p>The default bottom margin is <sup>3</sup>&frasl;<sub>4</sub>
-inch.</p>
+<p>The default bottom margin is
+<sup>3</sup>&frasl;<sub>4</sub>&nbsp;inch.</p>
 
   <p><label for="BottomMargin">Bottom margin</label><input type="text" name="BottomMargin" value="{{.BottomMargin | html}}"></input></p>
 
 <p>The left and right margins default to
-<sup>1</sup>&frasl;<sub>2</sub> inch.</p>
+<sup>1</sup>&frasl;<sub>2</sub>&nbsp;inch.</p>
 
   <p><label for="LeftMargin">Left margin</label><input type="text" name="LeftMargin" value="{{.LeftMargin | html}}"></input></p>
   <p><label for="RightMargin">Right margin</label><input type="text" name="RightMargin" value="{{.RightMargin | html}}"></input></p>
@@ -113,7 +114,8 @@ work.</p>
 
   <p><label for="ColumnsPerPage">Columns per page</label><input type="text" name="ColumnsPerPage" value="{{.ColumnsPerPage | html}}"></input></p>
 
-<p>The space between columns defaults to 10 points, i.e., <sup>10</sup>&frasl;<sub>72</sub> inch.
+<p>The space between columns defaults to 10 points, i.e.,
+<sup>10</sup>&frasl;<sub>72</sub>&nbsp;inch.
 
   <p><label for="ColumnSep">Space between columns</label><input type="text" name="ColumnSep" value="{{.ColumnSep | html}}"></input></p>
 
