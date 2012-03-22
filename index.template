@@ -113,54 +113,18 @@ work.</p>
 
   <p><label for="ColumnsPerPage">Columns per page</label><input type="text" name="ColumnsPerPage" value="{{.ColumnsPerPage | html}}"></input></p>
 
-<p>The space between columns defaults to 10 points, roughly
-<sup>1</sup>&frasl;<sub>6</sub> inch.
+<p>The space between columns defaults to 10 points, i.e., <sup>10</sup>&frasl;<sub>72</sub> inch.
 
   <p><label for="ColumnSep">Space between columns</label><input type="text" name="ColumnSep" value="{{.ColumnSep | html}}"></input></p>
 
-<p>This controls the spacing between lines. Bigger numbers increase
-the space, smaller numbers squish the lines together. 1.2 is the
-default. 1 would be tight single spacing, 2 would be double spacing,
-etc.</p>
-
-  <p><label for="LeadingMultiplier">Leading multiplier</label><input type="text" name="LeadingMultiplier" value="{{.LeadingMultiplier | html}}"></input></p>
-
-<p>The app automatically finds the biggest font size that will allow
-everything to fit on two pages. It only searches between these two
-font sizes.</p>
-
-  <p><label for="MinimumFontSize">Minimum font Size</label><input type="text" name="MinimumFontSize" value="{{.MinimumFontSize | html}}"></input></p>
-  <p><label for="MaximumFontSize">Maximum font size</label><input type="text" name="MaximumFontSize" value="{{.MaximumFontSize | html}}"></input></p>
-
-<p>Sometimes it is useful to squish the spaces in a line to make one
-more word fit. This is the smallest a space is allowed to get, as a
-fraction of the normal size.</p>
-
-  <p><label for="MinimumSpaceMultiplier">Minimum space multiplier</label><input type="text" name="MinimumSpaceMultiplier" value="{{.MinimumSpaceMultiplier | html}}"></input></p>
-
-<p>Similarly, lines are sometimes squished together a bit more to
-fit an extra line or two in a column. This is the smallest fraction
-of the normal size allowed (with leading already factored in).</p>
-
-  <p><label for="MinimumLineHeightMultiplier">Minimum line height multiplier</label><input type="text" name="MinimumLineHeightMultiplier" value="{{.MinimumLineHeightMultiplier | html}}"></input></p>
-
-<p>This controls how picky it is about the font size. It will keep
-searching until it finds the best font size to this precision. You
-should not need to modify this value, and it cannot go below
-0.0001.</p>
-
-  <p><label for="FontSizePrecision">Font size precision</label><input type="text" name="FontSizePrecision" value="{{.FontSizePrecision | html}}"></input></p>
-
-<p>The ward name is displayed in a font that is larger than the rest
-of the text by this multiple. It defaults to &radic;2.</p>
-
-  <p><label for="TitleFontMultiplier">Title font multiplier</label><input type="text" name="TitleFontMultiplier" value="{{.TitleFontMultiplier | html}}"></input></p>
-
-<p>Each line after the first line in a family is indented by this
-much, as a multiple of the font size. The default is the golden
-ratio.</p>
-
-  <p><label for="FirstLineDedentMultiplier">Indent after first line multiplier</label><input type="text" name="FirstLineDedentMultiplier" value="{{.FirstLineDedentMultiplier | html}}"></input></p>
+<input type="hidden" name="LeadingMultiplier" value="{{.LeadingMultiplier | html}}"></input>
+<input type="hidden" name="MinimumFontSize" value="{{.MinimumFontSize | html}}"></input>
+<input type="hidden" name="MaximumFontSize" value="{{.MaximumFontSize | html}}"></input>
+<input type="hidden" name="MinimumSpaceMultiplier" value="{{.MinimumSpaceMultiplier | html}}"></input>
+<input type="hidden" name="MinimumLineHeightMultiplier" value="{{.MinimumLineHeightMultiplier | html}}"></input>
+<input type="hidden" name="FontSizePrecision" value="{{.FontSizePrecision | html}}"></input>
+<input type="hidden" name="TitleFontMultiplier" value="{{.TitleFontMultiplier | html}}"></input>
+<input type="hidden" name="FirstLineDedentMultiplier" value="{{.FirstLineDedentMultiplier | html}}"></input>
 
 <h2>Phone formatting</h2>
 
