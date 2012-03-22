@@ -23,7 +23,7 @@ func (font *FontMetrics) MakeBox(text string, spacecompress float64) (box *Box, 
 	for _, ch := range text {
 		name, present := font.Lookup[ch]
 		if !present {
-			msg := fmt.Sprintf("MakeBox: Unknown character: [%c] with code %d", ch, int(ch))
+			msg := fmt.Sprintf("MakeBox: Unknown character: [%c] with code %d (text is [%s])", ch, int(ch), text)
 			return nil, errors.New(msg)
 		}
 		glyph := font.Glyphs[name]
@@ -67,42 +67,24 @@ func (font *FontMetrics) MakeBox(text string, spacecompress float64) (box *Box, 
 		width += float64(glyph.Width) + kern
 
 		switch {
-		// simple glyphs
-		case glyph.Code < 0x80:
-			switch glyph.Code {
-			case '(':
-				pending += "\\("
-			case ')':
-				pending += "\\)"
-			case '\\':
-				pending += "\\\\"
-			default:
-				pending += fmt.Sprintf("%c", glyph.Code)
-			}
-			if kern != 0 {
-				if float64(int(kern)) == kern {
-					cmd += fmt.Sprintf("(%s)%d", pending, -int(kern))
-				} else {
-					cmd += fmt.Sprintf("(%s)%.3f", pending, -kern)
-				}
-				pending = ""
-				simple = false
-			}
-
-		// need to use a hex code for this glyph
-		case pending != "" && kern != 0:
-			cmd += fmt.Sprintf("(%s)<%02x>%d", pending, glyph.Code, -kern)
-			pending = ""
-			simple = false
-		case pending != "":
-			cmd += fmt.Sprintf("(%s)<%02x>", pending, glyph.Code)
-			pending = ""
-			simple = false
-		case kern != 0:
-			cmd += fmt.Sprintf("<%02x>%d", glyph.Code, -kern)
-			simple = false
+		case glyph.Code == '(':
+			pending += "\\("
+		case glyph.Code == ')':
+			pending += "\\)"
+		case glyph.Code == '\\':
+			pending += "\\\\"
+		case glyph.Code < 0x20 || glyph.Code >= 0x80:
+			pending += fmt.Sprintf("\\%03o", glyph.Code)
 		default:
-			cmd += fmt.Sprintf("<%02x>", glyph.Code)
+			pending += fmt.Sprintf("%c", glyph.Code)
+		}
+		if kern != 0 {
+			if float64(int(kern)) == kern {
+				cmd += fmt.Sprintf("(%s)%d", pending, -int(kern))
+			} else {
+				cmd += fmt.Sprintf("(%s)%.3f", pending, -kern)
+			}
+			pending = ""
 			simple = false
 		}
 	}

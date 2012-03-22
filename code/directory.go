@@ -14,10 +14,10 @@ const (
 	fontPrefix         = "fonts"
 	romanFont          = "Times-Roman.afm"
 	boldFont           = "Times-Bold.afm"
-	typewriterFont     = "cmtt10.afm"
-	typewriterFontFile = "cmtt10.pfb"
+	typewriterFont     = "lmtt10.afm"
+	typewriterFontFile = "lmtt10.pfb"
 	typewriterStemV    = 125
-	CompressStreams    = true
+	CompressStreams    = false
 )
 
 type RegularExpression struct {
