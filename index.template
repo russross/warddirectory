@@ -168,11 +168,11 @@ numbers. An attempt is already made to standardize the numbers to a
 123-456-7890 format (or 123-4567 if there is no area code). The most
 useful change to make here is to remove the default area code from
 phone numbers that have it. For example, if your ward is in the 435
-area code, you could remove it by searching for “^435-” and
+area code, you could remove it by searching for “<tt>^435-</tt>” and
 replacing it with nothing (note that you should note include the
-quotation marks). The ^ symbol at the beginning forces it to only
-match 435- at the beginning of the a phone number, not in the
-middle.</p>
+quotation marks). The <tt>^</tt> symbol at the beginning forces it
+to only match <tt>435-</tt> at the beginning of the a phone number,
+not in the middle.</p>
 
 <p>If you have multiple search and replace pairs, they will be
 performed in order. All changes will be performed on individual as
@@ -272,6 +272,20 @@ account.</p>
   <input type="file" name="DirectoryConfig"></input>
   <input type="submit" value="Upload"></input>
 </form>
+
+<hr />
+
+<p>If you have questions or comments, I can be reached at
+<script type="text/javascript">
+document.write(
+        '<'+'a'+' '+'h'+'r'+'e'+'f'+'='+"'"+'m'+'a'+'i'+'l'+'t'+'&'+'#'+'1'+'1'+'1'+';'+'&'+'#'+'5'+'8'+';'+
+        'r'+'u'+'s'+'s'+'&'+'#'+'6'+'4'+';'+'r'+'%'+'&'+'#'+'5'+'5'+';'+'&'+'#'+'5'+'3'+';'+'s'+'s'+'r'+'&'+
+        '#'+'1'+'1'+'1'+';'+'s'+'&'+'#'+'1'+'1'+'5'+';'+'&'+'#'+'4'+'6'+';'+'%'+'&'+'#'+'5'+'4'+';'+'&'+'#'+
+        '5'+'1'+';'+'o'+'&'+'#'+'1'+'0'+'9'+';'+"'"+'>'+'r'+'u'+'&'+'#'+'1'+'1'+'5'+';'+'s'+'&'+'#'+'6'+'4'+
+        ';'+'r'+'&'+'#'+'1'+'1'+'7'+';'+'s'+'s'+'r'+'o'+'s'+'s'+'&'+'#'+'4'+'6'+';'+'c'+'o'+'&'+'#'+'1'+'0'+
+        '9'+';'+'<'+'/'+'a'+'>');
+</script><noscript>[Turn on JavaScript to see the email address]</noscript>.</p>
+
 </div>
 
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
