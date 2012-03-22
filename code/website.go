@@ -23,15 +23,17 @@ func init() {
 	var err error
 
 	// first load the fonts
-	if roman, err = ParseFontMetricsFile(filepath.Join(fontPrefix, romanFont), "FR", romanStemV); err != nil {
+	if roman, err = ParseFontMetricsFile(filepath.Join(fontPrefix, romanFont), "FR"); err != nil {
 		log.Fatal("loading roman font metrics: ", err)
 	}
-	if bold, err = ParseFontMetricsFile(filepath.Join(fontPrefix, boldFont), "FB", boldStemV); err != nil {
+	if bold, err = ParseFontMetricsFile(filepath.Join(fontPrefix, boldFont), "FB"); err != nil {
 		log.Fatal("loading bold font metrics: ", err)
 	}
-	if typewriter, err = ParseFontMetricsFile(filepath.Join(fontPrefix, typewriterFont), "FT", typewriterStemV); err != nil {
+	if typewriter, err = ParseFontMetricsFile(filepath.Join(fontPrefix, typewriterFont), "FT"); err != nil {
 		log.Fatal("loading typewriter font metrics: ", err)
 	}
+	// this is missing from the cmtt font metric file
+	typewriter.StemV = typewriterStemV
 	if typewriter.File, err = ioutil.ReadFile(filepath.Join(fontPrefix, typewriterFontFile)); err != nil {
 		log.Fatal("loading typewriter font: ", err)
 	}

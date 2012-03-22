@@ -12,10 +12,8 @@ import (
 
 const (
 	fontPrefix         = "fonts"
-	romanFont          = "ptmr8a.afm"
-	romanStemV         = 85 // this is missing from the .afm file
-	boldFont           = "ptmb8a.afm"
-	boldStemV          = 140
+	romanFont          = "Times-Roman.afm"
+	boldFont           = "Times-Bold.afm"
 	typewriterFont     = "cmtt10.afm"
 	typewriterFontFile = "cmtt10.pfb"
 	typewriterStemV    = 125

@@ -214,7 +214,7 @@ func (font *FontMetrics) ParseKerning(in string) error {
 }
 
 // parse and entire .afm file
-func ParseFontMetricsFile(file string, label string, stemv int) (font *FontMetrics, err error) {
+func ParseFontMetricsFile(file string, label string) (font *FontMetrics, err error) {
 	contents, err := ioutil.ReadFile(file)
 	if err != nil {
 		return
@@ -223,7 +223,6 @@ func ParseFontMetricsFile(file string, label string, stemv int) (font *FontMetri
 		Glyphs: make(map[string]*GlyphMetrics),
 		Lookup: make(map[rune]string),
 		Label:  label,
-		StemV:  stemv,
 		Flags:  1<<1 | 1<<5,
 	}
 	lines := strings.Split(string(contents), "\n")
@@ -245,6 +244,8 @@ func ParseFontMetricsFile(file string, label string, stemv int) (font *FontMetri
 			font.Ascent = a
 		} else if n, err = fmt.Sscanf(line, "Descender %d", &a); n == 1 && err == nil {
 			font.Descent = a
+		} else if n, err = fmt.Sscanf(line, "StdVW %d", &a); n == 1 && err == nil {
+			font.StemV = a
 		} else if n, err = fmt.Sscanf(line, "IsFixedPitch %s", &s); n == 1 && err == nil {
 			if s == "true" {
 				font.Flags |= 1
