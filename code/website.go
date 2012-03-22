@@ -6,7 +6,6 @@ import (
 	"appengine/user"
 	"code.google.com/p/gorilla/schema"
 	"encoding/json"
-	//"html"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -190,10 +189,7 @@ func generate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// format families
-	if err = dir.FormatFamilies(); err != nil {
-		http.Error(w, "formatting families: "+err.Error(), http.StatusBadRequest)
-		return
-	}
+	dir.FormatFamilies()
 
 	// find the font size
 	if err = dir.FindFontSize(); err != nil {
@@ -202,10 +198,7 @@ func generate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// render the header
-	if err = dir.RenderHeader(); err != nil {
-		http.Error(w, "rendering header: "+err.Error(), http.StatusBadRequest)
-		return
-	}
+	dir.RenderHeader()
 
 	// render the family listings
 	dir.SplitIntoLines()

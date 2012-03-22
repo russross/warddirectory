@@ -218,13 +218,10 @@ func (dir *Directory) ParseFamilies(src io.Reader) error {
 }
 
 // space: -1 means no leading space 0 regular, 1+ penalty for line break
-func packBox(lst []*Box, elt string, space int, font *FontMetrics) (entry []*Box, err error) {
+func packBox(lst []*Box, elt string, space int, font *FontMetrics) (entry []*Box) {
 	var box *Box
 	if len(lst) == 0 {
-		if box, err = font.MakeBox(elt, 1.0); err != nil {
-			return nil, err
-		}
-		return []*Box{box}, nil
+		return []*Box{font.MakeBox(elt, 1.0)}
 	}
 
 	prev := lst[len(lst)-1]
@@ -232,33 +229,27 @@ func packBox(lst []*Box, elt string, space int, font *FontMetrics) (entry []*Box
 	switch {
 	// can we tack this on to the end of the previous box?
 	case space < 0 && prev.Font == font:
-		if box, err = font.MakeBox(prev.Original+elt, 1.0); err != nil {
-			return nil, err
-		}
+		box = font.MakeBox(prev.Original+elt, 1.0)
 		lst[len(lst)-1] = box
-		return lst, nil
+		return lst
 
 	// join this to the previous box, but with different fonts
 	case space < 0:
 		prev.JoinNext = true
-		if box, err = font.MakeBox(elt, 1.0); err != nil {
-			return nil, err
-		}
-		return append(lst, box), nil
+		box = font.MakeBox(elt, 1.0)
+		return append(lst, box)
 
 	// make a new box
 	default:
-		if box, err = font.MakeBox(elt, 1.0); err != nil {
-			return nil, err
-		}
+		box = font.MakeBox(elt, 1.0)
 		prev.Penalty = space
-		return append(lst, box), nil
+		return append(lst, box)
 	}
 
 	panic("Can't get here")
 }
 
-func (dir *Directory) FormatFamilies() (err error) {
+func (dir *Directory) FormatFamilies() {
 	for _, family := range dir.Families {
 		var entry []*Box
 
@@ -270,9 +261,7 @@ func (dir *Directory) FormatFamilies() (err error) {
 			if i > 0 {
 				space = 2
 			}
-			if entry, err = packBox(entry, word, space, dir.Bold); err != nil {
-				return
-			}
+			entry = packBox(entry, word, space, dir.Bold)
 		}
 
 		needcomma := false
@@ -280,37 +269,27 @@ func (dir *Directory) FormatFamilies() (err error) {
 		// next the phone number (if present)
 		if family.Phone != "" {
 			if needcomma {
-				if entry, err = packBox(entry, ",", -1, dir.Roman); err != nil {
-					return
-				}
+				entry = packBox(entry, ",", -1, dir.Roman)
 				needcomma = false
 			}
-			if entry, err = packBox(entry, family.Phone, 0, dir.Roman); err != nil {
-				return
-			}
+			entry = packBox(entry, family.Phone, 0, dir.Roman)
 			needcomma = true
 		}
 
 		// next the email address (if present)
 		if family.Email != "" {
 			if needcomma {
-				if entry, err = packBox(entry, ",", -1, dir.Roman); err != nil {
-					return
-				}
+				entry = packBox(entry, ",", -1, dir.Roman)
 				needcomma = false
 			}
-			if entry, err = packBox(entry, family.Email, 0, dir.Typewriter); err != nil {
-				return
-			}
+			entry = packBox(entry, family.Email, 0, dir.Typewriter)
 			needcomma = true
 		}
 
 		// now the family members
 		for _, person := range family.People {
 			if needcomma {
-				if entry, err = packBox(entry, ",", -1, dir.Roman); err != nil {
-					return
-				}
+				entry = packBox(entry, ",", -1, dir.Roman)
 				needcomma = false
 			}
 
@@ -322,9 +301,7 @@ func (dir *Directory) FormatFamilies() (err error) {
 				if i > 0 {
 					space = 2
 				}
-				if entry, err = packBox(entry, word, space, dir.Roman); err != nil {
-					return
-				}
+				entry = packBox(entry, word, space, dir.Roman)
 			}
 
 			// no contact details?  just end with a comma
@@ -334,15 +311,11 @@ func (dir *Directory) FormatFamilies() (err error) {
 			}
 
 			// phone and email address are in parentheses
-			if entry, err = packBox(entry, "(", 1, dir.Roman); err != nil {
-				return
-			}
+			entry = packBox(entry, "(", 1, dir.Roman)
 
 			// phone
 			if person.Phone != "" {
-				if entry, err = packBox(entry, person.Phone, -1, dir.Roman); err != nil {
-					return
-				}
+				entry = packBox(entry, person.Phone, -1, dir.Roman)
 				needcomma = true
 			}
 
@@ -352,24 +325,18 @@ func (dir *Directory) FormatFamilies() (err error) {
 				space := 1
 
 				if needcomma {
-					if entry, err = packBox(entry, ",", -1, dir.Roman); err != nil {
-						return
-					}
+					entry = packBox(entry, ",", -1, dir.Roman)
 					needcomma = false
 				} else {
 					space = -1
 				}
 
 				// the email address
-				if entry, err = packBox(entry, person.Email, space, dir.Typewriter); err != nil {
-					return
-				}
+				entry = packBox(entry, person.Email, space, dir.Typewriter)
 			}
 
 			// close paren and comma
-			if entry, err = packBox(entry, ")", -1, dir.Roman); err != nil {
-				return
-			}
+			entry = packBox(entry, ")", -1, dir.Roman)
 			needcomma = true
 		}
 
@@ -377,9 +344,7 @@ func (dir *Directory) FormatFamilies() (err error) {
 		// split the address into words
 		if family.Address != "" {
 			if needcomma {
-				if entry, err = packBox(entry, ",", -1, dir.Roman); err != nil {
-					return
-				}
+				entry = packBox(entry, ",", -1, dir.Roman)
 				needcomma = false
 			}
 
@@ -393,17 +358,13 @@ func (dir *Directory) FormatFamilies() (err error) {
 					space = 2
 				}
 
-				if entry, err = packBox(entry, word, space, dir.Roman); err != nil {
-					return
-				}
+				entry = packBox(entry, word, space, dir.Roman)
 			}
 			needcomma = true
 		}
 
 		dir.Entries = append(dir.Entries, entry)
 	}
-
-	return nil
 }
 
 func (dir *Directory) CompileRegexps() (err error) {

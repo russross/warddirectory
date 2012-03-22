@@ -18,6 +18,7 @@ const (
 	typewriterFontFile = "lmtt10.pfb"
 	typewriterStemV    = 125
 	CompressStreams    = false
+	FallbackGlyph      = "question"
 )
 
 type RegularExpression struct {

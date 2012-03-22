@@ -17,14 +17,13 @@ import (
 // given a string, render it into PDF syntax using font metric data
 // this also computes the width of the box in units equal to 1/1000th of a point
 // if spacecompress != 1.0, space widths are adjusted by the given factor
-func (font *FontMetrics) MakeBox(text string, spacecompress float64) (box *Box, err error) {
+func (font *FontMetrics) MakeBox(text string, spacecompress float64) (box *Box) {
 	// find the list of glyphs, merging ligatures when possible
 	var glyphs []*GlyphMetrics
 	for _, ch := range text {
 		name, present := font.Lookup[ch]
 		if !present {
-			msg := fmt.Sprintf("MakeBox: Unknown character: [%c] with code %d (text is [%s])", ch, int(ch), text)
-			return nil, errors.New(msg)
+			name = FallbackGlyph
 		}
 		glyph := font.Glyphs[name]
 
@@ -97,23 +96,12 @@ func (font *FontMetrics) MakeBox(text string, spacecompress float64) (box *Box, 
 		cmd = "[" + cmd + "] TJ"
 	}
 
-	box = &Box{
+	return &Box{
 		Font:     font,
 		Original: text,
 		Width:    width,
 		Command:  cmd,
 	}
-	return
-}
-
-// same as MakeBox, but panic in the event of an error
-// useful in later passes, when all the text has already passed through MakeBox once
-func (font *FontMetrics) MustMakeBox(text string, spacecompress float64) *Box {
-	box, err := font.MakeBox(text, spacecompress)
-	if err != nil {
-		panic(err)
-	}
-	return box
 }
 
 type Breakable interface {
@@ -142,6 +130,10 @@ func Break(sequence Breakable) (startofeachchunk []int) {
 			matrix[from][to] = breakpoint{math.Inf(1), -1}
 			for i := from; i <= to; i++ {
 				cost := sequence.Cost(from, i+1, from == 0, i+1 == dim)
+				if math.IsInf(cost, 1) {
+					// adding more will not make this fit any better
+					break
+				}
 				if i+1 <= to {
 					cost += matrix[i+1][to].cost
 				}
@@ -177,7 +169,7 @@ func (elt *BoxSlice) Cost(a, b int, first, last bool) float64 {
 
 	// no space after the end of this sequence of words?
 	if words[len(words)-1].JoinNext {
-		return math.Inf(1)
+		return math.MaxFloat64
 	}
 
 	// see if the line fits
@@ -331,40 +323,40 @@ func (dir *Directory) SimplifyLine(boxes []*Box, linewidth float64) (simple []*B
 		// simple merger
 		case box.JoinNext:
 			join := next.JoinNext
-			boxes[i+1] = box.Font.MustMakeBox(box.Original+next.Original, spacefactor)
+			boxes[i+1] = box.Font.MakeBox(box.Original+next.Original, spacefactor)
 			boxes[i+1].JoinNext = join
 
 		// same font with a space between
 		case box.Font == next.Font:
 			join := next.JoinNext
-			boxes[i+1] = box.Font.MustMakeBox(box.Original+" "+next.Original, spacefactor)
+			boxes[i+1] = box.Font.MakeBox(box.Original+" "+next.Original, spacefactor)
 			boxes[i+1].JoinNext = join
 
 		// roman followed by anything
 		case box.Font == dir.Roman:
 			join := box.JoinNext
-			box = box.Font.MustMakeBox(box.Original+" ", spacefactor)
+			box = box.Font.MakeBox(box.Original+" ", spacefactor)
 			box.JoinNext = join
 			simple = append(simple, box)
 
 		// anything followed by roman
 		case next.Font == dir.Roman:
 			join := next.JoinNext
-			boxes[i+1] = next.Font.MustMakeBox(" "+next.Original, spacefactor)
+			boxes[i+1] = next.Font.MakeBox(" "+next.Original, spacefactor)
 			boxes[i+1].JoinNext = join
 			simple = append(simple, box)
 
 		// bold followed by anything
 		case box.Font == dir.Bold:
 			join := box.JoinNext
-			box = box.Font.MustMakeBox(box.Original+" ", spacefactor)
+			box = box.Font.MakeBox(box.Original+" ", spacefactor)
 			box.JoinNext = join
 			simple = append(simple, box)
 
 		// anything followed by bold
 		case next.Font == dir.Bold:
 			join := next.JoinNext
-			boxes[i+1] = next.Font.MustMakeBox(" "+next.Original, spacefactor)
+			boxes[i+1] = next.Font.MakeBox(" "+next.Original, spacefactor)
 			boxes[i+1].JoinNext = join
 			simple = append(simple, box)
 
@@ -440,17 +432,10 @@ func (dir *Directory) RenderColumn(entries [][][]*Box, number int) string {
 	return rendered
 }
 
-func (dir *Directory) RenderHeader() (err error) {
-	var title, date, useonly *Box
-	if title, err = dir.Bold.MakeBox(dir.Title, 1.0); err != nil {
-		return
-	}
-	if date, err = dir.Roman.MakeBox(time.Now().Format(dir.DateFormat), 1.0); err != nil {
-		return
-	}
-	if useonly, err = dir.Roman.MakeBox(dir.Disclaimer, 1.0); err != nil {
-		return
-	}
+func (dir *Directory) RenderHeader() {
+	title := dir.Bold.MakeBox(dir.Title, 1.0)
+	date := dir.Roman.MakeBox(time.Now().Format(dir.DateFormat), 1.0)
+	useonly := dir.Roman.MakeBox(dir.Disclaimer, 1.0)
 
 	// figure out where the hrule goes
 	length := dir.PageWidth - dir.RightMargin - dir.LeftMargin
@@ -484,8 +469,6 @@ func (dir *Directory) RenderHeader() (err error) {
 	text += "Q\n0 g 0 G\n"
 
 	dir.Header = text
-
-	return
 }
 
 func (dir *Directory) FindFontSize() (err error) {
