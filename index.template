@@ -14,9 +14,10 @@ title="site"></link>
 
 <div id="maincolumn">
 <p>This app generates a printable list of families for an LDS ward.
-It uses the CSV data downloaded from an lds.org account and
-processes it into a PDF file that fits everything on two pages (a
-single double-sided sheet of paper).</p>
+It uses ward directory data that anyone with an lds.org account can
+download and formats it on two pages. This lets you easily print a
+nice ward directory that fits on one double-sided sheet of
+paper.</p>
 
 <p>To use it, you must first download the directory information for
 your ward.  Follow this link:</p>
@@ -28,26 +29,25 @@ your ward.  Follow this link:</p>
 to a screen with your ward directory listed. On the left side, find
 a link that says “Export Households” and click on it. It will pop up
 a box and let you download a file.  Download the file and take note
-of where it is saved.</p>
+of where it is saved (usually in you “Downloads” directory).</p>
 
 <form method="post" id="submitform" action="/submit" enctype="multipart/form-data">
-<p>Next, come back here and click on this button:
+<p>Next, come back here and click on this button and find the file:
 <input type="file" id="MembershipData" name="MembershipData"></input></p>
 
-<p>Find the file you downloaded (the name is your unit number
-followed by .csv, although your operating system may hide the .csv
-part).</p>
-
-<p>Finally, click on this button:
+<p>Finally, click on the “Generate” button here to download the
+printable file:
 <input type="submit" id="generatebutton" name="SubmitButton" value="Generate"></input></p>
 
 <p>This will generate the ward directory PDF file and automatically
-start downloading it.</p>
+start downloading it. The membership data is never stored on the
+server, nor is it used for any purpose other than to generate the
+PDF file that you download.</p>
 
-<p>Print this on a single sheet of paper and hand out to your ward
-members. It is simple enough that you can print up new ones every
-few months and hand them out at the beginning of sacrament
-meeting.</p>
+<p>Print this PDF file on a single sheet of paper and hand out to
+your ward members. It is simple enough that you can print up new
+ones every few months and hand them out at the beginning of
+sacrament meeting.</p>
 
 <p>If your printer/copier does not do double sided printing, print
 one side first, then turn the paper over and print the other
@@ -57,8 +57,8 @@ side.</p>
 
 <fieldset>
 <legend>Page header</legend>
-<p>You can customize the output. Start by putting the name of your
-ward here so it will be displayed correctly:</p>
+<p>You can customize the output. Start by entering the name of your
+ward for the top of the page:</p>
 
   <p><label for="Title">Title</label><input type="text" name="Title" value="{{.Title | html}}"></input></p>
 
@@ -148,7 +148,7 @@ numbers. An attempt is already made to standardize the numbers to a
 useful change to make here is to remove the default area code from
 phone numbers that have it. For example, if your ward is in the 435
 area code, you could remove it by searching for “<tt>^435-</tt>” and
-replacing it with nothing (note that you should note include the
+replacing it with nothing (note that you should not include the
 quotation marks). The <tt>^</tt> symbol at the beginning forces it
 to only match <tt>435-</tt> at the beginning of the a phone number,
 not in the middle.</p>
@@ -162,8 +162,8 @@ a lot of flexibility if you know how to use them. A few quick
 tips:</p>
 
 <ul>
-<li>^ forces the match to only occur at the beginning of the phone
-number.</li>
+<li>^ at the beginning forces the match to only occur at the
+beginning of the phone number.</li>
 <li>$ at the end forces it to only match at the end.</li>
 <li>If you want to match parentheses, you must write \( and \),
 i.e., put a backslash in front of each one.</li>
@@ -192,7 +192,14 @@ Leave a pair blank to delete it.</p>
 <legend>Address formatting</legend>
 
 <p>Addresses can also be adjusted using regular expression matching.
-Here are a few examples that may be helpful:</p>
+If the city, state, or postal code are the same for everyone (or
+most people) in the ward, displaying them only serves to clutter up
+the page. Also, the shorter you make each entry, the larger the font
+size can be, since the app automatically finds the largest font size
+that will allow everything to fit on the number of pages you have
+requested.</p>
+
+<p>Here are a few examples that may be helpful:</p>
 
 <ul>
 <li>“<tt> (\d{5})(-\d{4})?$</tt>” replaced with nothing (note the space at
@@ -211,8 +218,16 @@ Utah.</li>
 <li>After removing the state, use something similar to get rid of
 the city if most of your members are in one city. Or change it to an
 abbreviated form, for example: “<tt> Salt Lake City$</tt>” to
-“<tt> SLC</tt>”.
+“<tt> SLC</tt>”.</li>
+<li>Replace “<tt>Street</tt>” with “<tt>St</tt>”, “<tt>North</tt>”
+with “<tt>N</tt>”, etc., to shorten overly-verbose addresses.</li>
 </ul>
+
+<p>You can also use this to correct errors that you find, but it is
+much better to correct the records themselves. Make a list of errors
+that you find and give it to your membership clerk (or ward clerk)
+with a polite request to fix it. Most clerks will be grateful for
+the help in improving the membership records.</p>
 
 {{range $i, $elt := .AddressRegexps}}
   <p><label for="AddressRegexps.{{$i}}.Expression">Search for</label><input type="text" name="AddressRegexps.{{$i}}.Expression" value="{{$elt.Expression | html}}"></input></p>
@@ -223,20 +238,20 @@ Leave a pair blank to delete it.</p>
 </fieldset>
 
 <p>Be sure to save the changes you make. They will be there next
-time you come to print and updated directory. They will be saved
-under your email address, and will automatically be loaded the next
-time you visit. Clicking the “Generate” button also saves your
-changes.</p>
+time you come to print an updated directory, so you can just
+download the latest listing from lds.org and generate a new
+directory. They will be saved under your email address, and will
+automatically be loaded the next time you visit. Clicking the
+“Generate” button also saves your changes.</p>
 
 <p>If you would rather not have your setup saved, you can click on
 the delete button below to reset everything. This action is
 permanent, so use it with caution.</p>
 
-<p>If you would like to save your settings on your own computer, or
-move them to another account, click on the Download button to
-download a .json file with all of your settings in it. You can
-upload it later or give it to someone else to upload so they can
-create directories.</p>
+<p>If you would like to save your settings on your own computer,
+click on the Download button to download a .json file with all of
+your settings in it. You can upload it later yourself, or you can
+give the file to someone else to upload using their own account.</p>
 
   <p>
     <input type="submit" name="SubmitButton" value="Save">
@@ -250,7 +265,7 @@ create directories.</p>
 <p>If you have downloaded your settings using the button above, you
 can upload them again here. Click the first button, find the file,
 then click “Upload” to upload and save your settings under your
-account.</p>
+account. This will overwrite any other settings you have saved.</p>
 
 <form method="post" action="/upload" enctype="multipart/form-data">
   <input type="file" id="DirectoryConfig" name="DirectoryConfig"></input>
