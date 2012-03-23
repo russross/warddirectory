@@ -8,6 +8,10 @@ handlers:
   static_files: site.css
   upload: site.css
 
+- url: /favicon.ico
+  static_files: favicon.ico
+  upload: favicon.ico
+
 - url: /(submit|upload)?
   login: required
   script: _go_app
