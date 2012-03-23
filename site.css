@@ -8,6 +8,10 @@ h1, h2 {
   font-weight: bold;
   margin-top: 1.25em;
 }
+legend {
+  font-weight: bold;
+  font-size: 150%;
+}
 
 h1:first-child { margin-top: 5px; }
 p:first-child { margin-top: 5px; }

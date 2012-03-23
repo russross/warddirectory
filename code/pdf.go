@@ -28,23 +28,25 @@ func (elt *Document) AddObject(object string) (ref string) {
 	return
 }
 
-func (elt *Document) AddStream(object string, stream []byte) (ref string) {
+func (elt *Document) AddStream(object string, stream []byte, compressed []byte) (ref string) {
 	flate := ""
 	if CompressStreams {
 		flate = "\n  /Filter /FlateDecode"
-		var compressed bytes.Buffer
-		var writer *zlib.Writer
-		var err error
-		if writer, err = zlib.NewWriterLevel(&compressed, zlib.BestCompression); err != nil {
-			panic(fmt.Sprint("Setting up zlib compressor: ", err))
+		if len(compressed) == 0 {
+			var buf bytes.Buffer
+			var writer *zlib.Writer
+			var err error
+			if writer, err = zlib.NewWriterLevel(&buf, zlib.BestCompression); err != nil {
+				panic(fmt.Sprint("Setting up zlib compressor: ", err))
+			}
+			if _, err = writer.Write(stream); err != nil {
+				panic(fmt.Sprint("Writing to zlib compressor: ", err))
+			}
+			if err = writer.Close(); err != nil {
+				panic(fmt.Sprint("Closing zlib compressor: ", err))
+			}
+			stream = buf.Bytes()
 		}
-		if _, err = writer.Write(stream); err != nil {
-			panic(fmt.Sprint("Writing to zlib compressor: ", err))
-		}
-		if err = writer.Close(); err != nil {
-			panic(fmt.Sprint("Closing zlib compressor: ", err))
-		}
-		stream = compressed.Bytes()
 	}
 
 	offset := len(elt.out.Bytes())
@@ -98,7 +100,7 @@ func (dir *Directory) MakePDF() (pdf []byte, err error) {
 			text += dir.Columns[col]
 			col++
 		}
-		doc.AddStream(obj_page_stream, []byte(text))
+		doc.AddStream(obj_page_stream, []byte(text), nil)
 	}
 
 	i := 1
@@ -145,7 +147,8 @@ func (dir *Directory) MakePDF() (pdf []byte, err error) {
 	if len(dir.Roman.File) > 0 {
 		doc.AddObject(makeWidths(dir.Roman))
 		doc.AddObject(makeFontDescriptor(dir.Roman, romanembedded))
-		doc.AddStream(fmt.Sprintf(obj_font_stream, len(dir.Roman.File), 0, 0), dir.Roman.File)
+		doc.AddStream(fmt.Sprintf(obj_font_stream, len(dir.Roman.File), 0, 0),
+			dir.Roman.File, dir.Roman.CompressedFile)
 	}
 
 	// bold font
@@ -153,7 +156,8 @@ func (dir *Directory) MakePDF() (pdf []byte, err error) {
 	if len(dir.Bold.File) > 0 {
 		doc.AddObject(makeWidths(dir.Bold))
 		doc.AddObject(makeFontDescriptor(dir.Bold, boldembedded))
-		doc.AddStream(fmt.Sprintf(obj_font_stream, len(dir.Bold.File), 0, 0), dir.Bold.File)
+		doc.AddStream(fmt.Sprintf(obj_font_stream, len(dir.Bold.File), 0, 0),
+			dir.Bold.File, dir.Bold.CompressedFile)
 	}
 
 	// typewriter font
@@ -161,7 +165,8 @@ func (dir *Directory) MakePDF() (pdf []byte, err error) {
 	if len(dir.Typewriter.File) > 0 {
 		doc.AddObject(makeWidths(dir.Typewriter))
 		doc.AddObject(makeFontDescriptor(dir.Typewriter, typewriterembedded))
-		doc.AddStream(fmt.Sprintf(obj_font_stream, len(dir.Typewriter.File), 0, 0), dir.Typewriter.File)
+		doc.AddStream(fmt.Sprintf(obj_font_stream, len(dir.Typewriter.File), 0, 0),
+			dir.Typewriter.File, dir.Typewriter.CompressedFile)
 	}
 
 	doc.WriteTrailer(info, catalog)

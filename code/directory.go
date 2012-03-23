@@ -5,7 +5,6 @@
 package main
 
 import (
-	"encoding/json"
 	"regexp"
 	"strings"
 )
@@ -79,6 +78,31 @@ type Directory struct {
 	Header       string     `json:"-" schema:"-" datastore:"-"`
 }
 
+func (dir *Directory) Copy() *Directory {
+	elt := new(Directory)
+	*elt = *dir
+
+	// clone the regexps
+	elt.ToDatastore()
+	elt.FromDatastore()
+
+	elt.Roman = dir.Roman.Copy()
+	elt.Bold = dir.Bold.Copy()
+	elt.Typewriter = dir.Typewriter.Copy()
+
+	// clear all the processed values
+	elt.Families = nil
+	elt.Entries = nil
+	elt.Linebreaks = nil
+	elt.Columnbreaks = nil
+	elt.Lines = nil
+	elt.FontSize = 0.0
+	elt.Columns = nil
+	elt.Header = ""
+
+	return elt
+}
+
 func (dir *Directory) FromDatastore() {
 	// convert the regexps from datastore format to normal
 	dir.PhoneRegexps = nil
@@ -123,11 +147,7 @@ func (dir *Directory) ToDatastore() {
 	}
 }
 
-func (dir *Directory) Prepare(roman, bold, typewriter *FontMetrics) {
-	dir.Roman = roman.Copy()
-	dir.Bold = bold.Copy()
-	dir.Typewriter = typewriter.Copy()
-
+func (dir *Directory) Prepare() {
 	dir.ColumnCount = dir.ColumnsPerPage * 2
 	dir.ColumnWidth = dir.PageWidth
 	dir.ColumnWidth -= dir.LeftMargin
@@ -140,14 +160,4 @@ func (dir *Directory) Prepare(roman, bold, typewriter *FontMetrics) {
 	if dir.MinimumFontSize < 0.0001 {
 		dir.MinimumFontSize = 0.0001
 	}
-}
-
-func NewDirectory(config []byte, roman, bold, typewriter *FontMetrics) (dir *Directory, err error) {
-	dir = new(Directory)
-	if err = json.Unmarshal(config, dir); err != nil {
-		return
-	}
-
-	dir.Prepare(roman, bold, typewriter)
-	return
 }

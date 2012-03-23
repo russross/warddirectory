@@ -55,10 +55,12 @@ print one side first, then turn the stack of paper over and print
 the other side. Practice it with one or two sheets to see how it
 needs to be placed in your printer.</p>
 
-<h1>Formatting Details</h1>
+<h1>Customizing the output</h1>
 
 <form method="post" action="/save">
 
+<fieldset>
+<legend>Page header</legend>
 <p>You can customize the output. Start by putting the name of your
 ward here so it will be displayed correctly:</p>
 
@@ -80,7 +82,10 @@ You should be formatting the same example date, i.e., January 2,
 2006/01/02, 2 January 2006, etc.</p>
 
   <p><label for="Disclaimer">Disclaimer</label><input type="text" name="Disclaimer" value="{{.Disclaimer | html}}"></input></p>
+</fieldset>
 
+<fieldset>
+<legend>Page setup</legend>
 <p>All of the measurements are given in <em>points</em>. A point is
 <sup>1</sup>&frasl;<sub>72</sub>&nbsp;inch. The default page size
 is 8.5&times;11&nbsp;inches. If you want it printed landscape, just
@@ -118,17 +123,10 @@ work.</p>
 <sup>10</sup>&frasl;<sub>72</sub>&nbsp;inch.
 
   <p><label for="ColumnSep">Space between columns</label><input type="text" name="ColumnSep" value="{{.ColumnSep | html}}"></input></p>
+</fieldset>
 
-<input type="hidden" name="LeadingMultiplier" value="{{.LeadingMultiplier | html}}"></input>
-<input type="hidden" name="MinimumFontSize" value="{{.MinimumFontSize | html}}"></input>
-<input type="hidden" name="MaximumFontSize" value="{{.MaximumFontSize | html}}"></input>
-<input type="hidden" name="MinimumSpaceMultiplier" value="{{.MinimumSpaceMultiplier | html}}"></input>
-<input type="hidden" name="MinimumLineHeightMultiplier" value="{{.MinimumLineHeightMultiplier | html}}"></input>
-<input type="hidden" name="FontSizePrecision" value="{{.FontSizePrecision | html}}"></input>
-<input type="hidden" name="TitleFontMultiplier" value="{{.TitleFontMultiplier | html}}"></input>
-<input type="hidden" name="FirstLineDedentMultiplier" value="{{.FirstLineDedentMultiplier | html}}"></input>
-
-<h2>Phone formatting</h2>
+<fieldset>
+<legend>Phone number formatting</legend>
 
 <p>Here you can perform search and replace adjustments to all phone
 numbers. An attempt is already made to standardize the numbers to a
@@ -174,8 +172,10 @@ expression tutorials.</p>
 <p><a id="morephone" href="#">Click here to add another search/replace pair</a>.
 Leave a pair blank to delete it.</p>
 <input type="hidden" id="nextphone" value="{{len .PhoneRegexps}}"></input>
+</fieldset>
 
-<h2>Address formatting</h2>
+<fieldset>
+<legend>Address formatting</legend>
 
 <p>Addresses can also be adjusted using regular expression matching.
 Here are a few examples that may be helpful:</p>
@@ -206,6 +206,7 @@ abbreviated form, for example: “<tt> Salt Lake City$</tt>” to
 <p><a id="moreaddress" href="#">Click here to add another search/replace pair</a>.
 Leave a pair blank to delete it.</p>
 <input type="hidden" id="nextaddress" value="{{len .AddressRegexps}}"></input>
+</fieldset>
 
 <p>Be sure to save the changes you make. They will be there next
 time you come to print and updated directory. They will be saved

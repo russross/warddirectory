@@ -27,23 +27,24 @@ type GlyphMetrics struct {
 
 // metrics for an entire font
 type FontMetrics struct {
-	Name        string
-	Label       string
-	File        []byte
-	CapHeight   int
-	Glyphs      map[string]*GlyphMetrics
-	Lookup      map[rune]string
-	FirstChar   rune
-	LastChar    rune
-	Flags       int
-	BBoxLeft    int
-	BBoxBottom  int
-	BBoxRight   int
-	BBoxTop     int
-	ItalicAngle int
-	Ascent      int
-	Descent     int
-	StemV       int
+	Name           string
+	Label          string
+	File           []byte
+	CompressedFile []byte
+	CapHeight      int
+	Glyphs         map[string]*GlyphMetrics
+	Lookup         map[rune]string
+	FirstChar      rune
+	LastChar       rune
+	Flags          int
+	BBoxLeft       int
+	BBoxBottom     int
+	BBoxRight      int
+	BBoxTop        int
+	ItalicAngle    int
+	Ascent         int
+	Descent        int
+	StemV          int
 }
 
 // a single chunk of text made up of glyphs

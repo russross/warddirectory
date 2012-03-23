@@ -367,15 +367,20 @@ func (dir *Directory) FormatFamilies() {
 	}
 }
 
-func (dir *Directory) CompileRegexps() (err error) {
+var FallbackRegexp = regexp.MustCompile(`^I don't match anything$`)
+
+func (dir *Directory) CompileRegexps() {
+	var err error
 	for _, elt := range dir.PhoneRegexps {
 		if elt.Regexp, err = regexp.Compile(elt.Expression); err != nil {
-			return
+			elt.Regexp = FallbackRegexp
+			elt.Expression = "!!Error!! " + elt.Expression
 		}
 	}
 	for _, elt := range dir.AddressRegexps {
 		if elt.Regexp, err = regexp.Compile(elt.Expression); err != nil {
-			return
+			elt.Regexp = FallbackRegexp
+			elt.Expression = "!!Error!! " + elt.Expression
 		}
 	}
 
