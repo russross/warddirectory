@@ -7,6 +7,7 @@ package main
 import (
 	"regexp"
 	"strings"
+	"time"
 )
 
 const (
@@ -16,7 +17,7 @@ const (
 	typewriterFont             = "lmtt10.afm"
 	typewriterFontFile         = "lmtt10.pfb"
 	typewriterStemV            = 125
-	CompressStreams            = false
+	CompressStreams            = true
 	FallbackGlyph              = "question"
 	FontSizePrecision          = 0.01
 	StartingFontSize   float64 = 10.0
@@ -149,7 +150,7 @@ func (dir *Directory) ToDatastore() {
 	}
 }
 
-func (dir *Directory) Prepare() {
+func (dir *Directory) ComputeImplicitFields() {
 	dir.ColumnCount = dir.ColumnsPerPage * dir.Pages
 	dir.ColumnWidth = dir.PageWidth
 	dir.ColumnWidth -= dir.LeftMargin
@@ -159,4 +160,100 @@ func (dir *Directory) Prepare() {
 	dir.ColumnHeight = dir.PageHeight
 	dir.ColumnHeight -= dir.TopMargin
 	dir.ColumnHeight -= dir.BottomMargin
+}
+
+// build a complete PDF object for this directory
+func (dir *Directory) MakePDF() (pdf []byte, err error) {
+	// make the PDF file
+	var doc Document
+
+	// build the info section
+	author := "Russ Ross"
+	mst := time.FixedZone("MST", -7*3600)
+	timestamp := time.Now().In(mst).Format("20060102150405-0700")
+	timestamp = "D:" + timestamp[:17] + "'" + timestamp[17:19] + "'" + timestamp[19:]
+	info := PDFMap{
+		"Title":        PDFString(dir.Title + " Directory"),
+		"Author":       PDFString(author),
+		"CreationDate": PDFString(timestamp),
+		"ModDate":      PDFString(timestamp),
+	}
+	info_ref := doc.TopLevelObject(info)
+
+	// build the root catalog
+	catalog := PDFMap{
+		"Type": PDFName("Catalog"),
+	}
+	catalog_ref := doc.TopLevelObject(catalog)
+
+	// build the fonts
+	var roman_ref, bold_ref, typewriter_ref PDFRef
+	if roman_ref, err = doc.MakeFont(dir.Roman); err != nil {
+		return
+	}
+	if bold_ref, err = doc.MakeFont(dir.Bold); err != nil {
+		return
+	}
+	if typewriter_ref, err = doc.MakeFont(dir.Typewriter); err != nil {
+		return
+	}
+
+	// the list of fonts, shared by all pages
+	fontResource := PDFMap{
+		"FR": roman_ref,
+		"FB": bold_ref,
+		"FT": typewriter_ref,
+	}
+	fontResource_ref := doc.TopLevelObject(fontResource)
+
+	// build the list of pages
+	kids := PDFSlice(nil)
+	pages := PDFMap{
+		"Type":  PDFName("Pages"),
+		"Count": PDFNumber(dir.Pages),
+	}
+	pages_ref := doc.TopLevelObject(pages)
+	catalog["Pages"] = pages_ref
+
+	// build the actual page objects
+	col := 0
+	for i := 0; i < dir.Pages; i++ {
+		// first get the contents of this page
+		text := dir.Header
+		for i := 0; i < dir.ColumnsPerPage; i++ {
+			text += dir.Columns[col]
+			col++
+		}
+		contents := &PDFStream{
+			Map:  PDFMap{},
+			Data: []byte(text),
+		}
+		contents_ref := doc.TopLevelObject(contents)
+
+		page := PDFMap{
+			"Type": PDFName("Page"),
+			"MediaBox": PDFSlice{
+				PDFNumber(0),
+				PDFNumber(0),
+				PDFNumber(dir.PageWidth),
+				PDFNumber(dir.PageHeight),
+			},
+			"Rotate": PDFNumber(0),
+			"Parent": pages_ref,
+			"Resources": PDFMap{
+				"ProcSet": PDFSlice{
+					PDFName("PDF"),
+					PDFName("ImageB"),
+					PDFName("Text"),
+				},
+				"Font": fontResource_ref,
+			},
+			"Contents": contents_ref,
+		}
+		page_ref := doc.TopLevelObject(page)
+		kids = append(kids, page_ref)
+	}
+	pages["Kids"] = kids
+
+	return doc.Render(info_ref, catalog_ref)
 }

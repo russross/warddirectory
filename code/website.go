@@ -17,7 +17,7 @@ import (
 
 var t *template.Template
 var roman, bold, typewriter *FontMetrics
-var defaultConfig *Directory
+var defaultConfig Directory
 var decoder = schema.NewDecoder()
 
 func init() {
@@ -59,11 +59,10 @@ func init() {
 	if raw, err = ioutil.ReadFile("config.json"); err != nil {
 		log.Fatal("loading default config file: ", err)
 	}
-	defaultConfig = new(Directory)
-	if err = json.Unmarshal(raw, defaultConfig); err != nil {
+	if err = json.Unmarshal(raw, &defaultConfig); err != nil {
 		log.Fatal("Unable to parse default config file: ", err)
 	}
-	defaultConfig.Prepare()
+	defaultConfig.ComputeImplicitFields()
 	defaultConfig.Roman = roman
 	defaultConfig.Bold = bold
 	defaultConfig.Typewriter = typewriter
@@ -120,11 +119,10 @@ func submit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	config.CompileRegexps()
-	config.Prepare()
+	config.ComputeImplicitFields()
 	config.ToDatastore()
 
 	action := r.FormValue("SubmitButton")
-	log.Printf("SubmitButton: [%s]", action)
 
 	// almost always save the uploaded form data
 	if action != "Delete" {
@@ -237,7 +235,7 @@ func upload(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unable to parse uploaded file: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	config.Prepare()
+	config.ComputeImplicitFields()
 
 	// delete the old one (if any)
 	if err := datastore.Delete(c, key); err != nil && err != datastore.ErrNoSuchEntity {
