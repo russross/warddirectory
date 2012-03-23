@@ -502,7 +502,7 @@ func (dir *Directory) FindFontSize() (rounds int, err error) {
 	if dir.DoLayout() {
 		// find an upper bound
 		for {
-			high *= 2.0
+			high *= math.Sqrt2
 			if high > MaximumFontSize {
 				return rounds, errors.New("Exceeded maximum font size")
 			}
@@ -516,7 +516,7 @@ func (dir *Directory) FindFontSize() (rounds int, err error) {
 	} else {
 		// find a lower bound
 		for {
-			low /= 2.0
+			low /= math.Sqrt2
 			if low < MinimumFontSize {
 				return rounds, errors.New("Exceeded minimum font size")
 			}

@@ -20,7 +20,7 @@ const (
 	FallbackGlyph              = "question"
 	FontSizePrecision          = 0.01
 	StartingFontSize   float64 = 10.0
-	MinimumFontSize    float64 = 2.5
+	MinimumFontSize    float64 = 2.0
 	MaximumFontSize    float64 = 20.0
 )
 
