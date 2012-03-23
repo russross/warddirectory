@@ -12,6 +12,10 @@ handlers:
   static_files: favicon.ico
   upload: favicon.ico
 
+- url: /robots.txt
+  static_files: robots.txt
+  upload: robots.txt
+
 - url: /(submit|upload)?
   login: required
   script: _go_app
