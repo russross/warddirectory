@@ -74,10 +74,6 @@ func init() {
 }
 
 func index(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/" {
-		http.Redirect(w, r, "/", http.StatusFound)
-	}
-
 	c := appengine.NewContext(r)
 	u := user.Current(c)
 	if u == nil {

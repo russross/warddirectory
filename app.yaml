@@ -8,6 +8,6 @@ handlers:
   static_files: site.css
   upload: site.css
 
-- url: /.*
+- url: /(submit|upload)?
   login: required
   script: _go_app
