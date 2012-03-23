@@ -18,6 +18,7 @@ const (
 	typewriterStemV    = 125
 	CompressStreams    = false
 	FallbackGlyph      = "question"
+	FontSizePrecision  = 0.01
 )
 
 type RegularExpression struct {
@@ -46,7 +47,6 @@ type Directory struct {
 	MaximumFontSize             float64
 	MinimumSpaceMultiplier      float64
 	MinimumLineHeightMultiplier float64
-	FontSizePrecision           float64
 	TitleFontMultiplier         float64
 	FirstLineDedentMultiplier   float64
 
@@ -158,7 +158,4 @@ func (dir *Directory) Prepare() {
 	dir.ColumnHeight = dir.PageHeight
 	dir.ColumnHeight -= dir.TopMargin
 	dir.ColumnHeight -= dir.BottomMargin
-	if dir.MinimumFontSize < 0.0001 {
-		dir.MinimumFontSize = 0.0001
-	}
 }

@@ -180,10 +180,12 @@ func submit(w http.ResponseWriter, r *http.Request) {
 		config.FormatFamilies()
 
 		// find the font size
-		if err = config.FindFontSize(); err != nil {
+		var rounds int
+		if rounds, err = config.FindFontSize(); err != nil {
 			http.Error(w, "finding font size: "+err.Error(), http.StatusBadRequest)
 			return
 		}
+		c.Infof("Found font size %.3f in %d rounds", config.FontSize, rounds)
 
 		// render the header
 		config.RenderHeader()

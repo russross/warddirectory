@@ -16,7 +16,6 @@
     "MaximumFontSize": 32.0,
     "MinimumSpaceMultiplier": 0.85,
     "MinimumLineHeightMultiplier": 0.95,
-    "FontSizePrecision": 0.001,
     "TitleFontMultiplier": 1.41421356237309504880,
     "FirstLineDedentMultiplier": 1.61803398874989484820,
 

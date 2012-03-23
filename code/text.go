@@ -472,50 +472,59 @@ func (dir *Directory) RenderHeader() {
 	dir.Header = text
 }
 
-func (dir *Directory) FindFontSize() (err error) {
+func (dir *Directory) DoLayout() (success bool) {
+	// do line breaking
+	dir.Linebreaks = nil
+	breaklines := &BoxSlice{
+		Directory: dir,
+	}
+	for _, entry := range dir.Entries {
+		breaklines.Boxes = entry
+		breaks := Break(breaklines)
+		dir.Linebreaks = append(dir.Linebreaks, breaks)
+	}
+
+	// do column breaking
+	breakentries := &EntrySlice{
+		Entries:   dir.Linebreaks,
+		Directory: dir,
+	}
+	dir.Columnbreaks = Break(breakentries)
+
+	// evaluate this break
+	return len(dir.Columnbreaks) <= dir.ColumnCount && len(dir.Columnbreaks) > 0
+}
+
+func (dir *Directory) FindFontSize() (rounds int, err error) {
 	low, high := dir.MinimumFontSize, dir.MaximumFontSize
 	finalrun := false
 	success := false
 
 	for {
+		rounds++
+
 		// get the next font size to try
-		dir.FontSize = (high + low) / 2.0
 		if finalrun {
 			dir.FontSize = low
+		} else {
+			dir.FontSize = (high + low) / 2.0
 		}
 
-		// do line breaking
-		dir.Linebreaks = nil
-		breaklines := &BoxSlice{
-			Directory: dir,
+		// if it succeeds at this font size,
+		// reset the lower bound
+		if dir.DoLayout() {
+			success = true
+			low = dir.FontSize
+		} else {
+			high = dir.FontSize
 		}
-		for _, entry := range dir.Entries {
-			breaklines.Boxes = entry
-			breaks := Break(breaklines)
-			dir.Linebreaks = append(dir.Linebreaks, breaks)
-		}
-
-		// do column breaking
-		breakentries := &EntrySlice{
-			Entries:   dir.Linebreaks,
-			Directory: dir,
-		}
-		dir.Columnbreaks = Break(breakentries)
 
 		if finalrun {
 			break
 		}
 
-		// evaluate this break
-		if len(dir.Columnbreaks) > dir.ColumnCount || len(dir.Columnbreaks) == 0 {
-			high = dir.FontSize
-		} else {
-			low = dir.FontSize
-			success = true
-		}
-
 		// are we finished?
-		if high-low < dir.FontSizePrecision {
+		if high-low < FontSizePrecision {
 			if low == dir.FontSize {
 				break
 			}
@@ -526,7 +535,7 @@ func (dir *Directory) FindFontSize() (err error) {
 	}
 
 	if !success {
-		return errors.New("Unable to find a suitable font size")
+		return rounds, errors.New("Unable to find a suitable font size")
 	}
-	return nil
+	return
 }
