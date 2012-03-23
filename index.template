@@ -4,8 +4,8 @@
 <head>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
 <title>Ward Directory Generator</title>
-<link href="/site.css" type="text/css" rel="stylesheet"
-title="site">
+<link href="/site.css" type="text/css" rel="stylesheet" title="site">
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
 </head>
 
 <body>
@@ -217,7 +217,11 @@ could search for “<tt>^(\d{3})-(\d{3})-(\d{4})$</tt>” and replace it
 with “<tt>($1)$2-$3</tt>”. For more information, search on the web
 for regular expression tutorials.</p>
 
+<ul id="phoneregexplist" class="regexplist">
 {{range $i, $elt := .PhoneRegexps}}
+<li>
+  <fieldset>
+  <legend>Phone substitution</legend>
   <p>
     <label for="PhoneRegexps.{{$i}}.Expression">Search for</label>
     <input type="text" id="PhoneRegexps.{{$i}}.Expression" name="PhoneRegexps.{{$i}}.Expression" value="{{$elt.Expression | html}}">
@@ -225,7 +229,10 @@ for regular expression tutorials.</p>
   <p>
     <label for="PhoneRegexps.{{$i}}.Replacement">Replace with</label>
     <input type="text" id="PhoneRegexps.{{$i}}.Replacement" name="PhoneRegexps.{{$i}}.Replacement" value="{{$elt.Replacement | html}}">
-  </p>{{end}}
+ </p>
+  </fieldset>
+</li>{{end}}
+</ul>
 <p><a id="morephone" href="#">Click here to add another search/replace pair</a>.
 Leave a pair blank to delete it.</p>
 <input type="hidden" id="nextphone" value="{{len .PhoneRegexps}}">
@@ -272,7 +279,11 @@ that you find and give it to your membership clerk (or ward clerk)
 with a polite request to fix it. Most clerks will be grateful for
 the help in improving the membership records.</p>
 
+<ul id="addressregexplist" class="regexplist">
 {{range $i, $elt := .AddressRegexps}}
+<li>
+  <fieldset>
+  <legend>Address substitution</legend>
   <p>
     <label for="AddressRegexps.{{$i}}.Expression">Search for</label>
     <input type="text" id="AddressRegexps.{{$i}}.Expression" name="AddressRegexps.{{$i}}.Expression" value="{{$elt.Expression | html}}">
@@ -280,7 +291,10 @@ the help in improving the membership records.</p>
   <p>
     <label for="AddressRegexps.{{$i}}.Replacement">Replace with</label>
     <input type="text" id="AddressRegexps.{{$i}}.Replacement" name="AddressRegexps.{{$i}}.Replacement" value="{{$elt.Replacement | html}}">
-  </p>{{end}}
+  </p>
+  </fieldset>
+</li>{{end}}
+</ul>
 <p><a id="moreaddress" href="#">Click here to add another search/replace pair</a>.
 Leave a pair blank to delete it.</p>
 <input type="hidden" id="nextaddress" value="{{len .AddressRegexps}}">
@@ -333,10 +347,8 @@ document.write(
         ';'+'r'+'&'+'#'+'1'+'1'+'7'+';'+'s'+'s'+'r'+'o'+'s'+'s'+'&'+'#'+'4'+'6'+';'+'c'+'o'+'&'+'#'+'1'+'0'+
         '9'+';'+'<'+'/'+'a'+'>');
 </script></p>
-
 </div>
 
-<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
 <script type="text/javascript">
 jQuery(function ($) {
     $('#units').change(function() {
@@ -376,29 +388,29 @@ jQuery(function ($) {
     $('#morephone').click(function () {
         var n = $('#nextphone').val();
         $('#nextphone').val(Number(n)+1);
-        var s = '<p>\n';
+        var s = '<fieldset>\n<legend>Phone substitution</legend>\n<p>\n';
         s += '  <label for="PhoneRegexps.' + n + '.Expression">Search for</label>\n';
         s += '  <input type="text" id="PhoneRegexps.' + n + '.Expression" name="PhoneRegexps.' + n + '.Expression" value="">\n';
         s += '</p>\n';
         s += '<p>\n';
         s += '  <label for="PhoneRegexps.' + n + '.Replacement">Replace with</label>\n';
         s += '  <input type="text" id="PhoneRegexps.' + n + '.Replacement" name="PhoneRegexps.' + n + '.Replacement" value="">\n';
-        s += '</p>';
-        $('#morephone').parent().before(s);
+        s += '</p>\n</fieldset>\n';
+        $('#phoneregexplist').append(s);
         return false;
     });
     $('#moreaddress').click(function () {
         var n = $('#nextaddress').val();
         $('#nextaddress').val(Number(n)+1);
-        var s = '<p>\n';
+        var s = '<fieldset>\n<legend>Address substitution</legend>\n<p>\n';
         s += '  <label for="AddressRegexps.' + n + '.Expression">Search for</label>\n';
         s += '  <input type="text" id="AddressRegexps.' + n + '.Expression" name="AddressRegexps.' + n + '.Expression" value="">\n';
         s += '</p>\n';
         s += '<p>\n';
         s += '  <label for="AddressRegexps.' + n + '.Replacement">Replace with</label>\n';
         s += '  <input type="text" id="AddressRegexps.' + n + '.Replacement" name="AddressRegexps.' + n + '.Replacement" value="">\n';
-        s += '</p>\n';
-        $('#moreaddress').parent().before(s);
+        s += '</p>\n</fieldset>\n';
+        $('#addressregexplist').append(s);
         return false;
     });
 });

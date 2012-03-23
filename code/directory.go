@@ -16,7 +16,7 @@ const (
 	boldFont                   = "Times-Bold.afm"
 	typewriterFont             = "lmtt10.afm"
 	typewriterFontFile         = "lmtt10.pfb"
-	typewriterStemV            = 125
+	typewriterStemV            = 69
 	CompressStreams            = true
 	FallbackGlyph              = "question"
 	FontSizePrecision          = 0.01

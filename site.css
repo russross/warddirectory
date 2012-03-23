@@ -15,6 +15,19 @@ legend {
   font-weight: bold;
   font-size: 150%;
 }
+.regexplist li {
+  list-style-type: none;
+}
+ul.regexplist {
+  padding-left: 1em;
+}
+.regexplist label {
+  padding-left: 0;
+}
+.regexplist fieldset {
+  padding-top: 0;
+  padding-bottom: 0;
+}
 
 h1:first-child { margin-top: 5px; }
 p:first-child { margin-top: 5px; }
@@ -37,13 +50,14 @@ div {
 }
 
 label {
+  width: 35%;
+  float: left;
   padding-left: 2em;
   font-weight: bold;
 }
 
 input[type=text] {
   width: 60%;
-  float: right;
 }
 
 hr {
