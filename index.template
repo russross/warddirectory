@@ -6,6 +6,7 @@
 <title>Ward Directory Generator</title>
 <link href="/site.css" type="text/css" rel="stylesheet" title="site">
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.18/jquery-ui.min.js"></script>
 </head>
 
 <body>
@@ -234,7 +235,7 @@ for regular expression tutorials.</p>
 </li>{{end}}
 </ul>
 <p><a id="morephone" href="#">Click here to add another search/replace pair</a>.
-Leave a pair blank to delete it.</p>
+Leave a pair blank to delete it. Drag and drop to re-order the pairs.</p>
 <input type="hidden" id="nextphone" value="{{len .PhoneRegexps}}">
 </fieldset>
 
@@ -296,7 +297,7 @@ the help in improving the membership records.</p>
 </li>{{end}}
 </ul>
 <p><a id="moreaddress" href="#">Click here to add another search/replace pair</a>.
-Leave a pair blank to delete it.</p>
+Leave a pair blank to delete it. Drag and drop to re-order the pairs.</p>
 <input type="hidden" id="nextaddress" value="{{len .AddressRegexps}}">
 </fieldset>
 
@@ -385,16 +386,32 @@ jQuery(function ($) {
             return false;
         }
     });
+    $('.regexplist').sortable({
+        stop: function() {
+            $(this).find('fieldset').each(function(i, elt) {
+                var $elt = $(elt);
+                $elt.find('label').each(function () {
+                    this.htmlFor = this.htmlFor.replace(/\.\d+\./, '.' + i + '.');
+                });
+                $elt.find('input').each(function () {
+                    this.id = this.id.replace(/\.\d+\./, '.' + i + '.');
+                    this.name = this.name.replace(/\.\d+\./, '.' + i + '.');
+                });
+            });
+        }
+    });
     $('#morephone').click(function () {
         var n = $('#nextphone').val();
         $('#nextphone').val(Number(n)+1);
+        var expr = 'PhoneRegexps.' + n + '.Expression';
+        var repl = 'PhoneRegexps.' + n + '.Replacement';
         var s = '<fieldset>\n<legend>Phone substitution</legend>\n<p>\n';
-        s += '  <label for="PhoneRegexps.' + n + '.Expression">Search for</label>\n';
-        s += '  <input type="text" id="PhoneRegexps.' + n + '.Expression" name="PhoneRegexps.' + n + '.Expression" value="">\n';
+        s += '  <label for="' + expr + '">Search for</label>\n';
+        s += '  <input type="text" id="' + expr + '" name="' + expr + '" value="">\n';
         s += '</p>\n';
         s += '<p>\n';
-        s += '  <label for="PhoneRegexps.' + n + '.Replacement">Replace with</label>\n';
-        s += '  <input type="text" id="PhoneRegexps.' + n + '.Replacement" name="PhoneRegexps.' + n + '.Replacement" value="">\n';
+        s += '  <label for="' + repl + '">Replace with</label>\n';
+        s += '  <input type="text" id="' + repl + '" name="' + repl + '" value="">\n';
         s += '</p>\n</fieldset>\n';
         $('#phoneregexplist').append(s);
         return false;
@@ -402,13 +419,15 @@ jQuery(function ($) {
     $('#moreaddress').click(function () {
         var n = $('#nextaddress').val();
         $('#nextaddress').val(Number(n)+1);
+        var expr = 'AddressRegexps.' + n + '.Expression';
+        var repl = 'AddressRegexps.' + n + '.Replacement';
         var s = '<fieldset>\n<legend>Address substitution</legend>\n<p>\n';
-        s += '  <label for="AddressRegexps.' + n + '.Expression">Search for</label>\n';
-        s += '  <input type="text" id="AddressRegexps.' + n + '.Expression" name="AddressRegexps.' + n + '.Expression" value="">\n';
+        s += '  <label for="' + expr + '">Search for</label>\n';
+        s += '  <input type="text" id="' + expr + '" name="' + expr + '" value="">\n';
         s += '</p>\n';
         s += '<p>\n';
-        s += '  <label for="AddressRegexps.' + n + '.Replacement">Replace with</label>\n';
-        s += '  <input type="text" id="AddressRegexps.' + n + '.Replacement" name="AddressRegexps.' + n + '.Replacement" value="">\n';
+        s += '  <label for="' + repl + '">Replace with</label>\n';
+        s += '  <input type="text" id="' + repl + '" name="' + repl + '" value="">\n';
         s += '</p>\n</fieldset>\n';
         $('#addressregexplist').append(s);
         return false;
