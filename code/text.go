@@ -451,10 +451,9 @@ func (dir *Directory) RenderHeader() {
 	text += fmt.Sprintf("/%s %.3f Tf %s\n", dir.Roman.Label, dir.FontSize, date.Command)
 
 	// place the title
-	tfontsize := dir.FontSize * dir.TitleFontMultiplier
 	text += fmt.Sprintf("1 0 0 1 %.3f %.3f Tm\n",
-		(dir.PageWidth-title.Width/1000.0*tfontsize)/2.0, y)
-	text += fmt.Sprintf("/%s %.3f Tf %s\n", dir.Bold.Label, tfontsize, title.Command)
+		(dir.PageWidth-title.Width/1000.0*dir.TitleFontSize)/2.0, y)
+	text += fmt.Sprintf("/%s %.3f Tf %s\n", dir.Bold.Label, dir.TitleFontSize, title.Command)
 
 	// place the church-use-only text
 	text += fmt.Sprintf("1 0 0 1 %.3f %.3f Tm\n",
@@ -496,9 +495,41 @@ func (dir *Directory) DoLayout() (success bool) {
 }
 
 func (dir *Directory) FindFontSize() (rounds int, err error) {
-	low, high := dir.MinimumFontSize, dir.MaximumFontSize
+	low, high := StartingFontSize, StartingFontSize
+	dir.FontSize = StartingFontSize
+	rounds++
+
+	if dir.DoLayout() {
+		// find an upper bound
+		for {
+			high *= 2.0
+			if high > MaximumFontSize {
+				return rounds, errors.New("Exceeded maximum font size")
+			}
+
+			dir.FontSize = high
+			rounds++
+			if !dir.DoLayout() {
+				break
+			}
+		}
+	} else {
+		// find a lower bound
+		for {
+			low /= 2.0
+			if low < MinimumFontSize {
+				return rounds, errors.New("Exceeded minimum font size")
+			}
+
+			dir.FontSize = low
+			rounds++
+			if dir.DoLayout() {
+				break
+			}
+		}
+	}
+
 	finalrun := false
-	success := false
 
 	for {
 		rounds++
@@ -513,7 +544,6 @@ func (dir *Directory) FindFontSize() (rounds int, err error) {
 		// if it succeeds at this font size,
 		// reset the lower bound
 		if dir.DoLayout() {
-			success = true
 			low = dir.FontSize
 		} else {
 			high = dir.FontSize
@@ -534,8 +564,5 @@ func (dir *Directory) FindFontSize() (rounds int, err error) {
 		}
 	}
 
-	if !success {
-		return rounds, errors.New("Unable to find a suitable font size")
-	}
 	return
 }

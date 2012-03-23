@@ -10,15 +10,18 @@ import (
 )
 
 const (
-	fontPrefix         = "fonts"
-	romanFont          = "Times-Roman.afm"
-	boldFont           = "Times-Bold.afm"
-	typewriterFont     = "lmtt10.afm"
-	typewriterFontFile = "lmtt10.pfb"
-	typewriterStemV    = 125
-	CompressStreams    = false
-	FallbackGlyph      = "question"
-	FontSizePrecision  = 0.01
+	fontPrefix                 = "fonts"
+	romanFont                  = "Times-Roman.afm"
+	boldFont                   = "Times-Bold.afm"
+	typewriterFont             = "lmtt10.afm"
+	typewriterFontFile         = "lmtt10.pfb"
+	typewriterStemV            = 125
+	CompressStreams            = false
+	FallbackGlyph              = "question"
+	FontSizePrecision          = 0.01
+	StartingFontSize   float64 = 10.0
+	MinimumFontSize    float64 = 2.5
+	MaximumFontSize    float64 = 20.0
 )
 
 type RegularExpression struct {
@@ -43,11 +46,9 @@ type Directory struct {
 	ColumnsPerPage              int
 	ColumnSep                   float64
 	LeadingMultiplier           float64
-	MinimumFontSize             float64
-	MaximumFontSize             float64
 	MinimumSpaceMultiplier      float64
 	MinimumLineHeightMultiplier float64
-	TitleFontMultiplier         float64
+	TitleFontSize               float64
 	FirstLineDedentMultiplier   float64
 
 	PhoneRegexps   []*RegularExpression `datastore:"-"`
