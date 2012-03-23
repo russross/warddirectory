@@ -86,31 +86,43 @@ You should be formatting the same example date, i.e., January 2,
 
 <fieldset>
 <legend>Page setup</legend>
-<p>All of the measurements are given in <em>points</em>. A point is
-<sup>1</sup>&frasl;<sub>72</sub>&nbsp;inch. The default page size
-is 8.5&times;11&nbsp;inches. If you want it printed landscape, just
-swap these two numbers. If you use A4 paper, the dimensions are
-595.276&times;841.89&nbsp;points.</p>
+<p>All of the measurements are given in
+<select id="units">
+  <option value="72">inches</option>
+  <option value="28.34645669291338582677">cm</option>
+  <option value="2.83464566929133858267">mm</option>
+  <option value="1">points</option>
+</select>
+The default page size is 8.5&times;11&nbsp;inches. If you want it
+printed landscape, just swap these two numbers. If you use A4 paper,
+the dimensions are 210&times;297&nbsp;mm.</p>
 
-  <p><label for="PageWidth">Page width</label><input type="text" name="PageWidth" value="{{.PageWidth | html}}"></input></p>
-  <p><label for="PageHeight">Page height</label><input type="text" name="PageHeight" value="{{.PageHeight | html}}"></input></p>
+  <p><label for="user_PageWidth">Page width</label><input type="text" class="measurement" id="user_PageWidth" name="user_PageWidth" value=""></input></p>
+  <input type="hidden" id="PageWidth" name="PageWidth" value="{{.PageWidth | html}}"></input>
+
+  <p><label for="user_PageHeight">Page height</label><input type="text" class="measurement" id="user_PageHeight" name="user_PageHeight" value=""></input></p>
+  <input type="hidden" id="PageHeight" name="PageHeight" value="{{.PageHeight | html}}"></input>
 
 <p>The default top margin is 1&nbsp;inch. The ward name and other
 info at the top is printed in the top margin, so plan a little extra
 space for it.</p>
 
-  <p><label for="TopMargin">Top margin</label><input type="text" name="TopMargin" value="{{.TopMargin | html}}"></input></p>
+  <p><label for="user_TopMargin">Top margin</label><input type="text" class="measurement" id="user_TopMargin" name="user_TopMargin" value=""></input></p>
+  <input type="hidden" id="TopMargin" name="TopMargin" value="{{.TopMargin | html}}"></input>
 
 <p>The default bottom margin is
 <sup>3</sup>&frasl;<sub>4</sub>&nbsp;inch.</p>
 
-  <p><label for="BottomMargin">Bottom margin</label><input type="text" name="BottomMargin" value="{{.BottomMargin | html}}"></input></p>
+  <p><label for="user_BottomMargin">Bottom margin</label><input type="text" class="measurement" id="user_BottomMargin" name="user_BottomMargin" value=""></input></p>
+  <input type="hidden" id="BottomMargin" name="BottomMargin" value="{{.BottomMargin | html}}"></input>
 
 <p>The left and right margins default to
 <sup>1</sup>&frasl;<sub>2</sub>&nbsp;inch.</p>
 
-  <p><label for="LeftMargin">Left margin</label><input type="text" name="LeftMargin" value="{{.LeftMargin | html}}"></input></p>
-  <p><label for="RightMargin">Right margin</label><input type="text" name="RightMargin" value="{{.RightMargin | html}}"></input></p>
+  <p><label for="user_LeftMargin">Left margin</label><input type="text" class="measurement" id="user_LeftMargin" name="user_LeftMargin" value=""></input></p>
+  <input type="hidden" id="LeftMargin" name="LeftMargin" value="{{.LeftMargin | html}}"></input>
+  <p><label for="user_RightMargin">Right margin</label><input type="text" class="measurement" id="user_RightMargin" name="user_RightMargin" value=""></input></p>
+  <input type="hidden" id="RightMargin" name="RightMargin" value="{{.RightMargin | html}}"></input>
 
 <p>The number of columns per page defaults to 2. If you have a
 really small ward, a single column may work well. For really big
@@ -122,7 +134,8 @@ work.</p>
 <p>The space between columns defaults to 10 points, i.e.,
 <sup>10</sup>&frasl;<sub>72</sub>&nbsp;inch.
 
-  <p><label for="ColumnSep">Space between columns</label><input type="text" name="ColumnSep" value="{{.ColumnSep | html}}"></input></p>
+  <p><label for="user_ColumnSep">Space between columns</label><input type="text" class="measurement" id="user_ColumnSep" name="user_ColumnSep" value=""></input></p>
+  <input type="hidden" id="ColumnSep" name="ColumnSep" value="{{.ColumnSep | html}}"></input>
 </fieldset>
 
 <fieldset>
@@ -259,6 +272,20 @@ document.write(
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
 <script type="text/javascript">
 jQuery(function ($) {
+    $('#units').change(function() {
+        var points_per = Number($('#units').val());
+        $('.measurement').each(function() {
+            var id = this.id.substr(5);
+            var value = Number($('#' + id).val()) / points_per;
+            this.value = value;
+        });
+    }).change();
+    $('.measurement').change(function() {
+        var points_per = Number($('#units').val());
+        var id = this.id.substr(5);
+        var value = Number(this.value) * points_per;
+        $('#' + id).val(value);
+    });
     $('#morephone').click(function () {
         var n = $('#nextphone').val();
         $('#nextphone').val(Number(n)+1);
