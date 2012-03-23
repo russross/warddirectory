@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/zlib"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -77,24 +78,34 @@ func (dir *Directory) MakePDF() (pdf []byte, err error) {
 	// make the PDF file
 	doc := NewDocument()
 
-	timestamp := time.Now().Format("20060102150405-0700")
+	mst := time.FixedZone("MST", -7*3600)
+	timestamp := time.Now().In(mst).Format("20060102150405-0700")
 	timestamp = "D:" + timestamp[:17] + "'" + timestamp[17:19] + "'" + timestamp[19:]
 	author := "Russ Ross"
 	info := doc.AddObject(fmt.Sprintf(obj_info, dir.Title, author, timestamp, timestamp))
 	pages := doc.ForwardRef(1)
 	catalog := doc.AddObject(fmt.Sprintf(obj_catalog, pages))
-	page1 := doc.ForwardRef(1)
-	page2 := doc.ForwardRef(2)
-	page1Contents := doc.ForwardRef(3)
-	page2Contents := doc.ForwardRef(4)
-	fontResource := doc.ForwardRef(5)
-	doc.AddObject(fmt.Sprintf(obj_pages, page1, page2))
-	doc.AddObject(fmt.Sprintf(obj_page, dir.PageWidth, dir.PageHeight, pages, fontResource, page1Contents))
-	doc.AddObject(fmt.Sprintf(obj_page, dir.PageWidth, dir.PageHeight, pages, fontResource, page2Contents))
+	fwd := 1
+	var pagelst []string
+	for i := 0; i < dir.Pages; i++ {
+		pagelst = append(pagelst, doc.ForwardRef(fwd))
+		fwd++
+	}
+	var contents []string
+	for i := 0; i < dir.Pages; i++ {
+		contents = append(contents, doc.ForwardRef(fwd))
+		fwd++
+	}
+	fontResource := doc.ForwardRef(fwd)
+	fwd++
+	doc.AddObject(fmt.Sprintf(obj_pages, strings.Join(pagelst, "\n    "), dir.Pages))
+	for i := 0; i < dir.Pages; i++ {
+		doc.AddObject(fmt.Sprintf(obj_page, dir.PageWidth, dir.PageHeight, pages, fontResource, contents[i]))
+	}
 
 	// pages
 	col := 0
-	for page := 0; page < 2; page++ {
+	for page := 0; page < dir.Pages; page++ {
 		text := dir.Header
 		for i := 0; i < dir.ColumnsPerPage; i++ {
 			text += dir.Columns[col]
@@ -256,9 +267,8 @@ const obj_pages = `<<
   /Type /Pages
   /Kids [
     %s
-    %s
   ]
-  /Count 2
+  /Count %d
 >>
 `
 const obj_page = `<<

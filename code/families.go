@@ -371,13 +371,23 @@ var FallbackRegexp = regexp.MustCompile(`^I don't match anything$`)
 
 func (dir *Directory) CompileRegexps() {
 	var err error
-	for _, elt := range dir.PhoneRegexps {
+	phone := dir.PhoneRegexps
+	dir.PhoneRegexps = nil
+	for _, elt := range phone {
+		if strings.TrimSpace(elt.Expression) != "" {
+			dir.PhoneRegexps = append(dir.PhoneRegexps, elt)
+		}
 		if elt.Regexp, err = regexp.Compile(elt.Expression); err != nil {
 			elt.Regexp = FallbackRegexp
 			elt.Expression = "!!Error!! " + elt.Expression
 		}
 	}
-	for _, elt := range dir.AddressRegexps {
+	address := dir.AddressRegexps
+	dir.AddressRegexps = nil
+	for _, elt := range address {
+		if strings.TrimSpace(elt.Expression) != "" {
+			dir.AddressRegexps = append(dir.AddressRegexps, elt)
+		}
 		if elt.Regexp, err = regexp.Compile(elt.Expression); err != nil {
 			elt.Regexp = FallbackRegexp
 			elt.Expression = "!!Error!! " + elt.Expression

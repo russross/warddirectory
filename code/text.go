@@ -434,7 +434,8 @@ func (dir *Directory) RenderColumn(entries [][][]*Box, number int) string {
 
 func (dir *Directory) RenderHeader() {
 	title := dir.Bold.MakeBox(dir.Title, 1.0)
-	date := dir.Roman.MakeBox(time.Now().Format(dir.DateFormat), 1.0)
+	mst := time.FixedZone("MST", -7*3600)
+	date := dir.Roman.MakeBox(time.Now().In(mst).Format(dir.DateFormat), 1.0)
 	useonly := dir.Roman.MakeBox(dir.Disclaimer, 1.0)
 
 	// figure out where the hrule goes

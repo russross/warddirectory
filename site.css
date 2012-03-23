@@ -8,6 +8,9 @@ h1, h2 {
   font-weight: bold;
   margin-top: 1.25em;
 }
+fieldset {
+  margin-top: 1em;
+}
 legend {
   font-weight: bold;
   font-size: 150%;
@@ -39,7 +42,7 @@ label {
 }
 
 input[type=text] {
-  width: 50%;
+  width: 60%;
   float: right;
 }
 

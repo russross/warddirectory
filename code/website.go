@@ -69,8 +69,7 @@ func init() {
 	defaultConfig.Typewriter = typewriter
 
 	http.HandleFunc("/", index)
-	http.HandleFunc("/save", save)
-	http.HandleFunc("/generate", generate)
+	http.HandleFunc("/submit", submit)
 	http.HandleFunc("/upload", upload)
 }
 
@@ -108,7 +107,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 	tmpl.Execute(w, config)
 }
 
-func save(w http.ResponseWriter, r *http.Request) {
+func submit(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 	u := user.Current(c)
 	if u == nil {
@@ -118,30 +117,37 @@ func save(w http.ResponseWriter, r *http.Request) {
 	key := datastore.NewKey(c, "Config", u.Email, 0, nil)
 
 	// fill it in using data from the submitted form
-	r.ParseForm()
+	r.ParseMultipartForm(1e6)
 	config := defaultConfig.Copy()
 	if err := decoder.Decode(config, r.Form); err != nil {
-		http.Error(w, "Decoding form data: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Decoding form data: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 	config.CompileRegexps()
+	config.Prepare()
 	config.ToDatastore()
 
-	// now figure out what to do with it
-	switch r.FormValue("SubmitButton") {
-	case "Save":
+	action := r.FormValue("SubmitButton")
+	log.Printf("SubmitButton: [%s]", action)
+
+	// almost always save the uploaded form data
+	if action != "Delete" {
 		if _, err := datastore.Put(c, key, config); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	// now figure out what to do with it
+	switch action {
+	case "Delete":
+		if err := datastore.Delete(c, key); err != nil && err != datastore.ErrNoSuchEntity {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		http.Redirect(w, r, "/", http.StatusFound)
 
 	case "Download":
-		if _, err := datastore.Put(c, key, config); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
 		// convert it into JSON format
 		data, err := json.MarshalIndent(config, "", "    ")
 		if err != nil {
@@ -152,83 +158,57 @@ func save(w http.ResponseWriter, r *http.Request) {
 		// return it to the browser
 		w.Header()["Content-Type"] = []string{"application/json"}
 		w.Header()["Content-Disposition"] =
-			[]string{`attachment; filename="directory_config.json"`}
+			[]string{`attachment; filename="WardDirectorySetup.json"`}
 		w.Write(data)
 
-	case "Delete":
-		if err := datastore.Delete(c, key); err != nil && err != datastore.ErrNoSuchEntity {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+	case "Generate":
+		// get the uplaoded CSV data
+		file, _, err := r.FormFile("MembershipData")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+		defer file.Close()
+
+		// load and parse the families
+		if err = config.ParseFamilies(file); err != nil {
+			http.Error(w, "parsing families: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		// format families
+		config.FormatFamilies()
+
+		// find the font size
+		if err = config.FindFontSize(); err != nil {
+			http.Error(w, "finding font size: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		// render the header
+		config.RenderHeader()
+
+		// render the family listings
+		config.SplitIntoLines()
+		config.RenderColumns()
+
+		// generate the PDF file
+		var pdf []byte
+		if pdf, err = config.MakePDF(); err != nil {
+			http.Error(w, "making the PDF: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		// set the headers and send the PDF back to the browser
+		w.Header()["Content-Type"] = []string{"application/pdf"}
+		w.Header()["Content-Disposition"] =
+			[]string{`attachment; filename="directory.pdf"`}
+		w.Write(pdf)
+
+	default:
+		// save
 		http.Redirect(w, r, "/", http.StatusFound)
 	}
-}
-
-func generate(w http.ResponseWriter, r *http.Request) {
-	c := appengine.NewContext(r)
-	u := user.Current(c)
-	if u == nil {
-		http.Error(w, "Must be logged in", http.StatusUnauthorized)
-		return
-	}
-	key := datastore.NewKey(c, "Config", u.Email, 0, nil)
-
-	// load the user's config data
-	dir := defaultConfig.Copy()
-	err := datastore.Get(c, key, dir)
-	if err == datastore.ErrNoSuchEntity {
-		// use defaults
-	} else if err != nil {
-		http.Error(w, "Failure loading config data from datastore: "+err.Error(),
-			http.StatusInternalServerError)
-		return
-	}
-	dir.FromDatastore()
-	dir.Prepare()
-	dir.CompileRegexps()
-
-	// get the uplaoded CSV data
-	file, _, err := r.FormFile("MembershipData")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	defer file.Close()
-
-	// load and parse the families
-	if err = dir.ParseFamilies(file); err != nil {
-		http.Error(w, "parsing families: "+err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	// format families
-	dir.FormatFamilies()
-
-	// find the font size
-	if err = dir.FindFontSize(); err != nil {
-		http.Error(w, "finding font size: "+err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	// render the header
-	dir.RenderHeader()
-
-	// render the family listings
-	dir.SplitIntoLines()
-	dir.RenderColumns()
-
-	// generate the PDF file
-	var pdf []byte
-	if pdf, err = dir.MakePDF(); err != nil {
-		http.Error(w, "making the PDF: "+err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	// set the headers and send the PDF back to the browser
-	w.Header()["Content-Type"] = []string{"application/pdf"}
-	w.Header()["Content-Disposition"] =
-		[]string{`attachment; filename="directory.pdf"`}
-	w.Write(pdf)
 }
 
 func upload(w http.ResponseWriter, r *http.Request) {

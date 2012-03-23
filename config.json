@@ -8,6 +8,7 @@
     "BottomMargin": 54.0,
     "LeftMargin": 36.0,
     "RightMargin": 36.0,
+	"Pages": 2,
     "ColumnsPerPage": 2,
     "ColumnSep": 10.0,
     "LeadingMultiplier": 1.2,

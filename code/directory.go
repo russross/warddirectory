@@ -38,6 +38,7 @@ type Directory struct {
 	BottomMargin                float64
 	LeftMargin                  float64
 	RightMargin                 float64
+	Pages                       int
 	ColumnsPerPage              int
 	ColumnSep                   float64
 	LeadingMultiplier           float64
@@ -148,7 +149,7 @@ func (dir *Directory) ToDatastore() {
 }
 
 func (dir *Directory) Prepare() {
-	dir.ColumnCount = dir.ColumnsPerPage * 2
+	dir.ColumnCount = dir.ColumnsPerPage * dir.Pages
 	dir.ColumnWidth = dir.PageWidth
 	dir.ColumnWidth -= dir.LeftMargin
 	dir.ColumnWidth -= dir.RightMargin

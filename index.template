@@ -30,17 +30,16 @@ a link that says “Export Households” and click on it. It will pop up
 a box and let you download a file.  Download the file and take note
 of where it is saved.</p>
 
-<form method="post" action="/generate" enctype="multipart/form-data">
+<form method="post" id="submitform" action="/submit" enctype="multipart/form-data">
 <p>Next, come back here and click on this button:
-<input type="file" name="MembershipData"></input></p>
+<input type="file" id="MembershipData" name="MembershipData"></input></p>
 
 <p>Find the file you downloaded (the name is your unit number
 followed by .csv, although your operating system may hide the .csv
 part).</p>
 
 <p>Finally, click on this button:
-<input type="submit" value="Generate"></input></p>
-</form>
+<input type="submit" id="generatebutton" name="SubmitButton" value="Generate"></input></p>
 
 <p>This will generate the ward directory PDF file and automatically
 start downloading it.</p>
@@ -50,14 +49,11 @@ members. It is simple enough that you can print up new ones every
 few months and hand them out at the beginning of sacrament
 meeting.</p>
 
-<p>If your printer/copier does not do double sided printing,
-print one side first, then turn the stack of paper over and print
-the other side. Practice it with one or two sheets to see how it
-needs to be placed in your printer.</p>
+<p>If your printer/copier does not do double sided printing, print
+one side first, then turn the paper over and print the other
+side.</p>
 
 <h1>Customizing the output</h1>
-
-<form method="post" action="/save">
 
 <fieldset>
 <legend>Page header</legend>
@@ -66,20 +62,20 @@ ward here so it will be displayed correctly:</p>
 
   <p><label for="Title">Title</label><input type="text" name="Title" value="{{.Title | html}}"></input></p>
 
-<p>Click on the “Save” button near the bottom of the page, then go
-back up and upload your membership data again to generate a new
-version. You do not need to download the data from lds.org
-again.</p>
-
-<p>For most of these next settings, the default values should work
-well for most people.</p>
-
-  <p><label for="DateFormat">Date format</label><input type="text" name="DateFormat" value="{{.DateFormat | html}}"></input></p>
+<p>Your settings are automatically saved when you generate a new
+directory, so you can go back up and click the “Generate” button at
+any time to see the effect of your changes. You do not need to
+download the data from lds.org each time.</p>
 
 <p>To change the date format, just change the example in this box.
 You should be formatting the same example date, i.e., January 2,
 2006, but you can write it different ways. For example: 1/2/06,
 2006/01/02, 2 January 2006, etc.</p>
+
+  <p><label for="DateFormat">Date format</label><input type="text" name="DateFormat" value="{{.DateFormat | html}}"></input></p>
+
+<p>This message is placed on the right hand side of the header. It
+defaults to “For Church Use Only”.</p>
 
   <p><label for="Disclaimer">Disclaimer</label><input type="text" name="Disclaimer" value="{{.Disclaimer | html}}"></input></p>
 </fieldset>
@@ -124,10 +120,15 @@ space for it.</p>
   <p><label for="user_RightMargin">Right margin</label><input type="text" class="measurement" id="user_RightMargin" name="user_RightMargin" value=""></input></p>
   <input type="hidden" id="RightMargin" name="RightMargin" value="{{.RightMargin | html}}"></input>
 
+<p>The number of pages defaults to 2. This lets you put the whole
+directory on a single double-sided sheet of paper.</p>
+
+  <p><label for="Pages">Pages</label><input type="text" name="Pages" value="{{.Pages | html}}"></input></p>
+
 <p>The number of columns per page defaults to 2. If you have a
 really small ward, a single column may work well. For really big
-wards, or if you are printing in landscape format, 3 or more might
-work.</p>
+wards, if you are printing in landscape format, or if you are
+printing on a single page, 3 or more might look better.</p>
 
   <p><label for="ColumnsPerPage">Columns per page</label><input type="text" name="ColumnsPerPage" value="{{.ColumnsPerPage | html}}"></input></p>
 
@@ -223,11 +224,13 @@ Leave a pair blank to delete it.</p>
 
 <p>Be sure to save the changes you make. They will be there next
 time you come to print and updated directory. They will be saved
-under your email address. You must save before running the generator
-or your changes will be lost.</p>
+under your email address, and will automatically be loaded the next
+time you visit. Clicking the “Generate” button also saves your
+changes.</p>
 
 <p>If you would rather not have your setup saved, you can click on
-the delete button below to reset everything. THIS IS PERMANENT.</p>
+the delete button below to reset everything. This action is
+permanent, so use it with caution.</p>
 
 <p>If you would like to save your settings on your own computer, or
 move them to another account, click on the Download button to
@@ -238,7 +241,7 @@ create directories.</p>
   <p>
     <input type="submit" name="SubmitButton" value="Save">
     <input type="submit" name="SubmitButton" value="Download">
-    <input type="submit" name="SubmitButton" value="Delete">
+    <input type="submit" id="deletebutton" name="SubmitButton" value="Delete">
   </p>
 </form>
 
@@ -250,8 +253,8 @@ then click “Upload” to upload and save your settings under your
 account.</p>
 
 <form method="post" action="/upload" enctype="multipart/form-data">
-  <input type="file" name="DirectoryConfig"></input>
-  <input type="submit" value="Upload"></input>
+  <input type="file" id="DirectoryConfig" name="DirectoryConfig"></input>
+  <input type="submit" id="uploadbutton" value="Upload"></input>
 </form>
 
 <hr />
@@ -285,6 +288,26 @@ jQuery(function ($) {
         var id = this.id.substr(5);
         var value = Number(this.value) * points_per;
         $('#' + id).val(value);
+    });
+    $('#generatebutton').click(function() {
+        // make sure they selected a file before trying to upload
+        if ($('#MembershipData').val() == '') {
+            alert('Please select a .csv file before clicking the “Generate” button');
+            return false;
+        }
+    });
+    $('#uploadbutton').click(function() {
+        // make sure they selected a file before trying to upload
+        if ($('#DirectoryConfig').val() == '') {
+            alert('Please select a .json file before clicking the “Upload” button');
+            return false;
+        }
+    });
+    $('#deletebutton').click(function() {
+        // confirm before deleting
+        if (!confirm("Are you sure you want to delete your setup?")) {
+            return false;
+        }
     });
     $('#morephone').click(function () {
         var n = $('#nextphone').val();
