@@ -348,11 +348,11 @@ automatically be loaded the next time you visit. Clicking the
 “Generate” button also saves your changes.</p>
 
 <p>If you would rather not have your setup saved, you can click on
-the delete button below to reset everything. This action is
+the “Delete” button below to reset everything. This action is
 permanent, so use it with caution.</p>
 
 <p>If you would like to save your settings on your own computer,
-click on the Download button to download a .json file with all of
+click on the “Download” button to download a .json file with all of
 your settings in it. You can upload it later yourself, or you can
 give the file to someone else to upload using their own account.</p>
 
