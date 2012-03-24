@@ -40,15 +40,15 @@ h1:first-child { margin-top: 5px; }
 p:first-child { margin-top: 5px; }
 
 div#header {
-  padding-bottom: 1em;
   margin-bottom: 4px;
 }
+
 div#header h1 {
   font-size: 300%;
   margin-bottom: 0;
 }
 
-div#header, div#maincolumn {
+#header, #maincolumn {
   width: 960px;
   margin: 0 auto;
   padding: 1em;
