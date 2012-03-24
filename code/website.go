@@ -8,11 +8,14 @@ import (
 	"code.google.com/p/gorilla/schema"
 	"compress/zlib"
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"text/template"
+	"unicode/utf8"
 )
 
 var t *template.Template
@@ -181,9 +184,27 @@ func submit(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		defer file.Close()
+		contents, err := ioutil.ReadAll(file)
+		if err != nil {
+			http.Error(w, "reading uploaded file: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		var src io.Reader
+
+		// see if it is valid utf-8 input
+		if !utf8.Valid(contents) {
+			// if not, assume it is latin1/windows1252/iss8859-1 and convert it
+			runes := make([]rune, len(contents))
+			for i, ch := range contents {
+				runes[i] = rune(ch)
+			}
+			src = strings.NewReader(string(runes))
+		} else {
+			src = bytes.NewReader(contents)
+		}
 
 		// load and parse the families
-		if err = config.ParseFamilies(file); err != nil {
+		if err = config.ParseFamilies(src); err != nil {
 			http.Error(w, "parsing families: "+err.Error(), http.StatusBadRequest)
 			return
 		}
