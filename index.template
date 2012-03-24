@@ -67,7 +67,7 @@ section so you can set the name of your ward.</p>
 ward for the top of the page:</p>
 
   <p>
-    <label for="Title">Title</label>
+    <label for="Title">Ward name</label>
     <input type="text" id="Title" name="Title" value="{{.Title | html}}">
   </p>
 
