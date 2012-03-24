@@ -25,7 +25,7 @@ ul.regexplist {
 .regexplist label {
   padding-left: 0;
 }
-.regexplist fieldset, .regexplist label {
+.regexplist fieldset, .regexplist fieldset label {
   cursor: pointer;
 }
 .regexplist fieldset {
