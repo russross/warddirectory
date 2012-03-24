@@ -17,6 +17,7 @@ const (
 	typewriterFont             = "lmtt10.afm"
 	typewriterFontFile         = "lmtt10.pfb"
 	typewriterStemV            = 69
+	glyphlistFile			   = "glyphlist.txt"
 	CompressStreams            = true
 	FallbackGlyph              = "question"
 	FontSizePrecision          = 0.01

@@ -17,6 +17,7 @@ import (
 
 var t *template.Template
 var roman, bold, typewriter *FontMetrics
+var unicodeToGlyph map[rune]string
 var defaultConfig Directory
 var decoder = schema.NewDecoder()
 
@@ -33,6 +34,12 @@ func init() {
 	if typewriter, err = ParseFontMetricsFile(filepath.Join(fontPrefix, typewriterFont), "FT"); err != nil {
 		log.Fatal("loading typewriter font metrics: ", err)
 	}
+
+	// get the complete list of glyphs we know about
+	if unicodeToGlyph, err = GlyphMapping(roman, bold, typewriter, filepath.Join(fontPrefix, glyphlistFile)); err != nil {
+		log.Fatal("loading glyph metrics: ", err)
+	}
+
 	// this is missing from the cmtt font metric file
 	typewriter.StemV = typewriterStemV
 	if typewriter.File, err = ioutil.ReadFile(filepath.Join(fontPrefix, typewriterFontFile)); err != nil {
@@ -41,13 +48,13 @@ func init() {
 	var compressed bytes.Buffer
 	var writer *zlib.Writer
 	if writer, err = zlib.NewWriterLevel(&compressed, zlib.BestCompression); err != nil {
-		panic("Setting up zlib compressor: " + err.Error())
+		log.Fatal("Setting up zlib compressor: ", err)
 	}
 	if _, err = writer.Write(typewriter.File); err != nil {
-		panic("Writing to zlib compressor: " + err.Error())
+		log.Fatal("Writing to zlib compressor: ", err)
 	}
 	if err = writer.Close(); err != nil {
-		panic("Closing zlib compressor: " + err.Error())
+		log.Fatal("Closing zlib compressor: ", err)
 	}
 	typewriter.CompressedFile = compressed.Bytes()
 
