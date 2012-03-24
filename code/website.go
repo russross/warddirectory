@@ -121,6 +121,7 @@ func submit(w http.ResponseWriter, r *http.Request) {
 	// fill it in using data from the submitted form
 	r.ParseMultipartForm(1e6)
 	config := defaultConfig.Copy()
+	config.Author = u.Email
 
 	// checkboxes are missing if false, so set the checkbox
 	// values to false before decoding

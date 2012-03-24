@@ -17,13 +17,16 @@ const (
 	typewriterFont             = "lmtt10.afm"
 	typewriterFontFile         = "lmtt10.pfb"
 	typewriterStemV            = 69
-	glyphlistFile			   = "glyphlist.txt"
+	glyphlistFile              = "glyphlist.txt"
 	CompressStreams            = true
 	FallbackGlyph              = "question"
 	FontSizePrecision          = 0.01
 	StartingFontSize   float64 = 10.0
 	MinimumFontSize    float64 = 2.0
-	MaximumFontSize    float64 = 20.0
+	MaximumFontSize    float64 = 40.0
+	Subject                    = "LDS Ward Directory"
+	Creator                    = "https://lds.org/directory/"
+	Producer                   = "http://ward-directory.appspot.com/"
 )
 
 type RegularExpression struct {
@@ -86,6 +89,7 @@ type Directory struct {
 	FontSize     float64    `json:"-" schema:"-" datastore:"-"`
 	Columns      []string   `json:"-" schema:"-" datastore:"-"`
 	Header       string     `json:"-" schema:"-" datastore:"-"`
+	Author       string     `json:"-" schema:"-" datastore:"-"`
 }
 
 func (dir *Directory) Copy() *Directory {
@@ -109,6 +113,7 @@ func (dir *Directory) Copy() *Directory {
 	elt.FontSize = 0.0
 	elt.Columns = nil
 	elt.Header = ""
+	elt.Author = ""
 
 	return elt
 }
@@ -175,13 +180,15 @@ func (dir *Directory) MakePDF() (pdf []byte, err error) {
 	var doc Document
 
 	// build the info section
-	author := "Russ Ross"
 	mst := time.FixedZone("MST", -7*3600)
 	timestamp := time.Now().In(mst).Format("20060102150405-0700")
 	timestamp = "D:" + timestamp[:17] + "'" + timestamp[17:19] + "'" + timestamp[19:]
 	info := PDFMap{
 		"Title":        PDFString(dir.Title + " Directory"),
-		"Author":       PDFString(author),
+		"Author":       PDFString(dir.Author),
+		"Subject":      PDFString(Subject),
+		"Creator":      PDFString(Creator),
+		"Producer":     PDFString(Producer),
 		"CreationDate": PDFString(timestamp),
 		"ModDate":      PDFString(timestamp),
 	}

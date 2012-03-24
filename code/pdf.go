@@ -181,66 +181,84 @@ func (doc Document) Render(info, catalog PDFRef) (pdf []byte, err error) {
 }
 
 func (doc *Document) MakeFont(font *FontMetrics) (ref PDFRef, err error) {
+	var fontobject PDFMap
+
+	// built in font
 	if len(font.File) == 0 {
-		ref = doc.TopLevelObject(PDFMap{
+		fontobject = PDFMap{
 			"Type":     PDFName("Font"),
 			"Subtype":  PDFName("Type1"),
 			"BaseFont": PDFName(font.Name),
-		})
-		return
-	}
+		}
 
-	// build the list of widths
-	widths := PDFWidthSlice(nil)
-	for n := font.FirstChar; n <= font.LastChar; n++ {
-		if name, present := font.Lookup[n]; present {
-			widths = append(widths, font.Glyphs[name].Width)
-		} else {
-			widths = append(widths, 0)
+	} else {
+		// build the list of widths
+		widths := PDFWidthSlice(nil)
+		for n := font.FirstChar; n <= font.LastChar; n++ {
+			if name, present := font.CodePointToName[n]; present {
+				widths = append(widths, font.Glyphs[name].Width)
+			} else {
+				widths = append(widths, 0)
+			}
+		}
+
+		// embed the font file
+		file := &PDFStream{
+			Map: PDFMap{
+				"Length1": PDFNumber(len(font.File)),
+				"Length2": PDFNumber(0),
+				"Length3": PDFNumber(0),
+			},
+			Data:       font.File,
+			Compressed: font.CompressedFile,
+		}
+		file_ref := doc.TopLevelObject(file)
+
+		// make the font descriptor
+		descriptor := PDFMap{
+			"Type":     PDFName("FontDescriptor"),
+			"FontName": PDFName(font.Name),
+			"Flags":    PDFNumber(font.Flags),
+			"FontBBox": PDFSlice{
+				PDFNumber(font.BBoxLeft),
+				PDFNumber(font.BBoxBottom),
+				PDFNumber(font.BBoxRight),
+				PDFNumber(font.BBoxTop),
+			},
+			"ItalicAngle": PDFNumber(font.ItalicAngle),
+			"Ascent":      PDFNumber(font.Ascent),
+			"Descent":     PDFNumber(font.Descent),
+			"CapHeight":   PDFNumber(font.CapHeight),
+			"StemV":       PDFNumber(font.StemV),
+			"FontFile":    file_ref,
+		}
+		descriptor_ref := doc.TopLevelObject(descriptor)
+
+		fontobject = PDFMap{
+			"Type":           PDFName("Font"),
+			"Subtype":        PDFName("Type1"),
+			"BaseFont":       PDFName(font.Name),
+			"FirstChar":      PDFNumber(font.FirstChar),
+			"LastChar":       PDFNumber(font.LastChar),
+			"Widths":         widths,
+			"FontDescriptor": descriptor_ref,
 		}
 	}
 
-	// embed the font file
-	file := &PDFStream{
-		Map: PDFMap{
-			"Length1": PDFNumber(len(font.File)),
-			"Length2": PDFNumber(0),
-			"Length3": PDFNumber(0),
-		},
-		Data:       font.File,
-		Compressed: font.CompressedFile,
+	// does it need an encoding?
+	if font.LastChar > 0x7f {
+		differences := PDFSlice{PDFNumber(0x80)}
+		for i := rune(0x80); i <= font.LastChar; i++ {
+			differences = append(differences, PDFName(font.CodePointToName[i]))
+		}
+		encoding := PDFMap{
+			"Type":        PDFName("Encoding"),
+			"Differences": differences,
+		}
+		encoding_ref := doc.TopLevelObject(encoding)
+		fontobject["Encoding"] = encoding_ref
 	}
-	file_ref := doc.TopLevelObject(file)
 
-	// make the font descriptor
-	descriptor := PDFMap{
-		"Type":     PDFName("FontDescriptor"),
-		"FontName": PDFName(font.Name),
-		"Flags":    PDFNumber(font.Flags),
-		"FontBBox": PDFSlice{
-			PDFNumber(font.BBoxLeft),
-			PDFNumber(font.BBoxBottom),
-			PDFNumber(font.BBoxRight),
-			PDFNumber(font.BBoxTop),
-		},
-		"ItalicAngle": PDFNumber(font.ItalicAngle),
-		"Ascent":      PDFNumber(font.Ascent),
-		"Descent":     PDFNumber(font.Descent),
-		"CapHeight":   PDFNumber(font.CapHeight),
-		"StemV":       PDFNumber(font.StemV),
-		"FontFile":    file_ref,
-	}
-	descriptor_ref := doc.TopLevelObject(descriptor)
-
-	fontobject := PDFMap{
-		"Type":           PDFName("Font"),
-		"Subtype":        PDFName("Type1"),
-		"BaseFont":       PDFName(font.Name),
-		"FirstChar":      PDFNumber(font.FirstChar),
-		"LastChar":       PDFNumber(font.LastChar),
-		"Widths":         widths,
-		"FontDescriptor": descriptor_ref,
-	}
 	ref = doc.TopLevelObject(fontobject)
 	return
 }

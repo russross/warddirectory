@@ -14,6 +14,73 @@ import (
 	"time"
 )
 
+func (font *FontMetrics) GetGlyph(ch rune) *GlyphMetrics {
+	// look up the global mapping
+	name, present := unicodeToGlyph[ch]
+	if !present {
+		return font.Glyphs[FallbackGlyph]
+	}
+
+	// see if the glyph is available in this font
+	glyph, present := font.Glyphs[name]
+	if !present {
+		return font.Glyphs[FallbackGlyph]
+	}
+
+	return glyph
+}
+
+func (font *FontMetrics) GetCode(glyph *GlyphMetrics) string {
+	name := glyph.Name
+
+	// figure out how to represent this in strings,
+	// mapping it to a new codepoint if necessary
+	if code, present := font.NameToCode[name]; present {
+		return code
+	}
+
+	// record that this glyph has been used
+	if 0x20 <= glyph.Code && glyph.Code < 0x80 {
+		// it's an ascii character that can be mapped directly
+		if font.FirstChar == 0 || glyph.Code < font.FirstChar {
+			font.FirstChar = glyph.Code
+		}
+		if font.LastChar == 0 || glyph.Code > font.LastChar {
+			font.LastChar = glyph.Code
+		}
+
+		switch glyph.Code {
+		case '(':
+			font.NameToCode[name] = "\\("
+		case ')':
+			font.NameToCode[name] = "\\)"
+		case '\\':
+			font.NameToCode[name] = "\\\\"
+		default:
+			font.NameToCode[name] = string(glyph.Code)
+		}
+
+		font.CodePointToName[glyph.Code] = name
+	} else {
+		// reserve the next unused code point for this glyph
+		if font.LastChar < 0x7f {
+			font.LastChar = 0x7f
+		}
+		font.LastChar++
+
+		// make sure we haven't used up all 512 code points that
+		// we can access easily
+		if font.LastChar >= 0x200 {
+			panic("Too many different characters in use: international character support is limited")
+		}
+
+		font.NameToCode[name] = fmt.Sprintf("\\%03o", font.LastChar)
+		font.CodePointToName[font.LastChar] = name
+	}
+
+	return font.NameToCode[name]
+}
+
 // given a string, render it into PDF syntax using font metric data
 // this also computes the width of the box in units equal to 1/1000th of a point
 // if spacecompress != 1.0, space widths are adjusted by the given factor
@@ -21,11 +88,7 @@ func (font *FontMetrics) MakeBox(text string, spacecompress float64) (box *Box) 
 	// find the list of glyphs, merging ligatures when possible
 	var glyphs []*GlyphMetrics
 	for _, ch := range text {
-		name, present := font.Lookup[ch]
-		if !present {
-			name = FallbackGlyph
-		}
-		glyph := font.Glyphs[name]
+		glyph := font.GetGlyph(ch)
 
 		// see if this can be combined with the previous glyph
 		count := len(glyphs)
@@ -36,16 +99,6 @@ func (font *FontMetrics) MakeBox(text string, spacecompress float64) (box *Box) 
 			}
 		}
 		glyphs = append(glyphs, glyph)
-
-		// record that this glyph has been used
-		if glyph.Code > 0 {
-			if font.FirstChar == 0 || glyph.Code < font.FirstChar {
-				font.FirstChar = glyph.Code
-			}
-			if font.LastChar == 0 || glyph.Code > font.LastChar {
-				font.LastChar = glyph.Code
-			}
-		}
 	}
 
 	// now compute the total width, including kerning
@@ -65,18 +118,7 @@ func (font *FontMetrics) MakeBox(text string, spacecompress float64) (box *Box) 
 		}
 		width += float64(glyph.Width) + kern
 
-		switch {
-		case glyph.Code == '(':
-			pending += "\\("
-		case glyph.Code == ')':
-			pending += "\\)"
-		case glyph.Code == '\\':
-			pending += "\\\\"
-		case glyph.Code < 0x20 || glyph.Code >= 0x80:
-			pending += fmt.Sprintf("\\%03o", glyph.Code)
-		default:
-			pending += fmt.Sprintf("%c", glyph.Code)
-		}
+		pending += font.GetCode(glyph)
 		if kern != 0 {
 			if float64(int(kern)) == kern {
 				cmd += fmt.Sprintf("(%s)%d", pending, -int(kern))

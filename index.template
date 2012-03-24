@@ -55,7 +55,7 @@ sacrament meeting.</p>
 one side first, then turn the paper over and print the other
 side.</p>
 
-<h1>Customizing the output</h1>
+<h1>Customize the output</h1>
 
 <p>Click on any of these section headers to see the ways that you
 can customize your directory. At a minimum, open the “Page header”
@@ -77,9 +77,8 @@ any time to see the effect of your changes. You do not need to
 download the data from lds.org each time.</p>
 
 <p>To change the date format, just change the example in this box.
-You should be formatting the same example date, i.e., January 2,
-2006, but you can write it different ways. For example: 1/2/06,
-2006/01/02, 2 January 2006, etc.</p>
+Write January 2, 2006 in the format that you prefer. Examples:
+1/2/06, 2006/01/02, 2 January 2006, etc.</p>
 
   <p>
     <label for="DateFormat">Date format</label>
@@ -217,7 +216,7 @@ email addresses will be omitted.</p>
 </fieldset>
 
 <fieldset class="section">
-<legend>Phone number formatting</legend>
+<legend>Phone number adjustments</legend>
 
 <p>Here you can perform search and replace adjustments to all phone
 numbers. An attempt is already made to standardize the numbers to a
@@ -279,7 +278,7 @@ Drag and drop to change the order. Blank pairs are ignored.</p>
 </fieldset>
 
 <fieldset class="section">
-<legend>Address formatting</legend>
+<legend>Address adjustments</legend>
 
 <p>Addresses can also be adjusted using regular expression matching.
 If the city, state, or postal code are the same for everyone (or

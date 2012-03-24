@@ -29,22 +29,25 @@ type GlyphMetrics struct {
 type FontMetrics struct {
 	Name           string
 	Label          string
+	Glyphs         map[string]*GlyphMetrics
 	File           []byte
 	CompressedFile []byte
-	CapHeight      int
-	Glyphs         map[string]*GlyphMetrics
-	Lookup         map[rune]string
-	FirstChar      rune
-	LastChar       rune
-	Flags          int
-	BBoxLeft       int
-	BBoxBottom     int
-	BBoxRight      int
-	BBoxTop        int
-	ItalicAngle    int
-	Ascent         int
-	Descent        int
-	StemV          int
+
+	CapHeight   int
+	FirstChar   rune
+	LastChar    rune
+	Flags       int
+	BBoxLeft    int
+	BBoxBottom  int
+	BBoxRight   int
+	BBoxTop     int
+	ItalicAngle int
+	Ascent      int
+	Descent     int
+	StemV       int
+
+	NameToCode      map[string]string
+	CodePointToName map[rune]string
 }
 
 // a single chunk of text made up of glyphs
@@ -93,9 +96,6 @@ func (font *FontMetrics) ParseGlyph(in string) error {
 		panic("Duplicate glyph found while parsing font metrics file")
 	}
 	font.Glyphs[glyph.Name] = glyph
-	if glyph.Code >= 0 {
-		font.Lookup[glyph.Code] = glyph.Name
-	}
 
 	return nil
 }
@@ -126,7 +126,6 @@ func ParseFontMetricsFile(file string, label string) (font *FontMetrics, err err
 	}
 	font = &FontMetrics{
 		Glyphs: make(map[string]*GlyphMetrics),
-		Lookup: make(map[rune]string),
 		Label:  label,
 		Flags:  1<<1 | 1<<5,
 	}
@@ -187,12 +186,8 @@ func ParseFontMetricsFile(file string, label string) (font *FontMetrics, err err
 func (font *FontMetrics) Copy() *FontMetrics {
 	elt := new(FontMetrics)
 	*elt = *font
-	elt.Lookup = make(map[rune]string)
-	for _, glyph := range elt.Glyphs {
-		if glyph.Code > 0 {
-			elt.Lookup[glyph.Code] = glyph.Name
-		}
-	}
+	elt.NameToCode = make(map[string]string)
+	elt.CodePointToName = make(map[rune]string)
 	elt.FirstChar = 0
 	elt.LastChar = 0
 	return elt
