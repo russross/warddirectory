@@ -92,7 +92,7 @@ defaults to “For Church Use Only”.</p>
 </fieldset>
 
 <fieldset>
-<legend>Page setup</legend>
+<legend>Page layout</legend>
 <p>All of the measurements are given in
 <select id="units">
   <option value="72">inches</option>
@@ -174,6 +174,41 @@ printing on a single page, 3 or more might look better.</p>
     <label for="user_ColumnSep">Space between columns</label>
     <input type="text" class="measurement" id="user_ColumnSep" name="user_ColumnSep" value="">
     <input type="hidden" id="ColumnSep" name="ColumnSep" value="{{.ColumnSep | html}}">
+  </p>
+</fieldset>
+
+<fieldset>
+<legend>What to include</legend>
+
+<p>You can customize which information is included in the directory.</p>
+
+<p>If you choose not to include all family members, only the heads
+of household will be displayed, and all personal phone numbers and
+email addresses will be omitted.</p>
+
+  <p>
+    <label for="FullFamily">All family members</label>
+    <input type="checkbox" id="FullFamily" name="FullFamily" value="true"{{if .FullFamily}} checked="yes"{{end}}>
+  </p>
+  <p>
+    <label for="FamilyPhone">Family phone number</label>
+    <input type="checkbox" id="FamilyPhone" name="FamilyPhone" value="true"{{if .FamilyPhone}} checked="yes"{{end}}>
+  </p>
+  <p>
+    <label for="FamilyEmail">Family email address</label>
+    <input type="checkbox" id="FamilyEmail" name="FamilyEmail" value="true"{{if .FamilyEmail}} checked="yes"{{end}}>
+  </p>
+  <p>
+    <label for="FamilyAddress">Family address</label>
+    <input type="checkbox" id="FamilyAddress" name="FamilyAddress" value="true"{{if .FamilyAddress}} checked="yes"{{end}}>
+  </p>
+  <p>
+    <label for="PersonalPhones">Individual phone numbers</label>
+    <input type="checkbox" id="PersonalPhones" name="PersonalPhones" value="true"{{if .PersonalPhones}} checked="yes"{{end}}>
+  </p>
+  <p>
+    <label for="PersonalEmails">Individual email addresses</label>
+    <input type="checkbox" id="PersonalEmails" name="PersonalEmails" value="true"{{if .PersonalEmails}} checked="yes"{{end}}>
   </p>
 </fieldset>
 

@@ -51,6 +51,12 @@ type Directory struct {
 	MinimumLineHeightMultiplier float64
 	TitleFontSize               float64
 	FirstLineDedentMultiplier   float64
+	FullFamily                  bool
+	FamilyPhone                 bool
+	FamilyEmail                 bool
+	FamilyAddress               bool
+	PersonalPhones              bool
+	PersonalEmails              bool
 
 	PhoneRegexps   []*RegularExpression `datastore:"-"`
 	AddressRegexps []*RegularExpression `datastore:"-"`

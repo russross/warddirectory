@@ -162,18 +162,37 @@ func (dir *Directory) ParseFamilies(src io.Reader) error {
 
 		// gather the individual family members
 		var familyMembers [][]string
-		for i := 5; i < len(fields); i += 3 {
-			familyMembers = append(familyMembers, fields[i:i+3])
+		if dir.FullFamily {
+			for i := 5; i < len(fields); i += 3 {
+				familyMembers = append(familyMembers, fields[i:i+3])
+			}
+		}
+
+		// prepare couple name
+		if strings.HasPrefix(family.Couple, family.Surname+", ") {
+			family.Couple = family.Couple[len(family.Surname)+2:]
 		}
 
 		// prepare address
-		family.Address = prepAddress(dir.AddressRegexps, family.Address)
+		if dir.FamilyAddress {
+			family.Address = prepAddress(dir.AddressRegexps, family.Address)
+		} else {
+			family.Address = ""
+		}
 
 		// prepare the family phone number
-		family.Phone = prepPhone(dir.PhoneRegexps, family.Phone, "")
+		if dir.FamilyPhone {
+			family.Phone = prepPhone(dir.PhoneRegexps, family.Phone, "")
+		} else {
+			family.Phone = ""
+		}
 
 		// prepare family email address
-		family.Email = prepEmail(family.Email, "")
+		if dir.FamilyEmail {
+			family.Email = prepEmail(family.Email, "")
+		} else {
+			family.Email = ""
+		}
 
 		// gather the list of family members
 		for _, individual := range familyMembers {
@@ -197,10 +216,18 @@ func (dir *Directory) ParseFamilies(src io.Reader) error {
 			}
 
 			// prepare individual phone number
-			person.Phone = prepPhone(dir.PhoneRegexps, person.Phone, family.Phone)
+			if dir.PersonalPhones {
+				person.Phone = prepPhone(dir.PhoneRegexps, person.Phone, family.Phone)
+			} else {
+				person.Phone = ""
+			}
 
 			// prepare individual email address
-			person.Email = prepEmail(person.Email, family.Email)
+			if dir.PersonalEmails {
+				person.Email = prepEmail(person.Email, family.Email)
+			} else {
+				person.Email = ""
+			}
 
 			family.People = append(family.People, person)
 		}
@@ -265,6 +292,33 @@ func (dir *Directory) FormatFamilies() {
 		}
 
 		needcomma := false
+
+		// next the couple name (if that is all that was requested)
+		if family.Couple != "" && !dir.FullFamily {
+			if needcomma {
+				entry = packBox(entry, ",", -1, dir.Roman)
+				needcomma = false
+			}
+			for i, name := range strings.Split(family.Couple, " & ") {
+				space := 0
+
+				// discourage line breaks between people
+				if i > 0 {
+					entry = packBox(entry, "&", 2, dir.Roman)
+					space = 1
+				}
+
+				// split the person's name into discrete words
+				for j, word := range strings.Fields(name) {
+					// strongly discourage line breaks within a person's name
+					if j > 0 {
+						space = 2
+					}
+					entry = packBox(entry, word, space, dir.Roman)
+				}
+			}
+			needcomma = true
+		}
 
 		// next the phone number (if present)
 		if family.Phone != "" {

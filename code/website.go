@@ -114,6 +114,16 @@ func submit(w http.ResponseWriter, r *http.Request) {
 	// fill it in using data from the submitted form
 	r.ParseMultipartForm(1e6)
 	config := defaultConfig.Copy()
+
+	// checkboxes are missing if false, so set the checkbox
+	// values to false before decoding
+	config.FullFamily = false
+	config.FamilyPhone = false
+	config.FamilyEmail = false
+	config.FamilyAddress = false
+	config.PersonalPhones = false
+	config.PersonalEmails = false
+
 	if err := decoder.Decode(config, r.Form); err != nil {
 		http.Error(w, "Decoding form data: "+err.Error(), http.StatusBadRequest)
 		return
