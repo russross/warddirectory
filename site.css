@@ -12,6 +12,9 @@ h1, h2 {
 fieldset {
   margin-top: 1em;
 }
+fieldset.section > legend {
+  cursor: pointer;
+}
 legend {
   font-weight: bold;
   font-size: 150%;
@@ -45,7 +48,7 @@ div#header h1 {
   margin-bottom: 0;
 }
 
-div {
+div#header, div#maincolumn {
   width: 960px;
   margin: 0 auto;
   padding: 1em;

@@ -57,7 +57,11 @@ side.</p>
 
 <h1>Customizing the output</h1>
 
-<fieldset>
+<p>Click on any of these section headers to see the ways that you
+can customize your directory. At a minimum, open the “Page header”
+section so you can set the name of your ward.</p>
+
+<fieldset class="section">
 <legend>Page header</legend>
 <p>You can customize the output. Start by entering the name of your
 ward for the top of the page:</p>
@@ -91,7 +95,7 @@ defaults to “For Church Use Only”.</p>
   </p>
 </fieldset>
 
-<fieldset>
+<fieldset class="section">
 <legend>Page layout</legend>
 <p>All of the measurements are given in
 <select id="units">
@@ -177,7 +181,7 @@ printing on a single page, 3 or more might look better.</p>
   </p>
 </fieldset>
 
-<fieldset>
+<fieldset class="section">
 <legend>What to include</legend>
 
 <p>You can customize which information is included in the directory.</p>
@@ -212,7 +216,7 @@ email addresses will be omitted.</p>
   </p>
 </fieldset>
 
-<fieldset>
+<fieldset class="section">
 <legend>Phone number formatting</legend>
 
 <p>Here you can perform search and replace adjustments to all phone
@@ -274,7 +278,7 @@ Drag and drop to change the order. Blank pairs are ignored.</p>
 <input type="hidden" id="nextphone" value="{{len .PhoneRegexps}}">
 </fieldset>
 
-<fieldset>
+<fieldset class="section">
 <legend>Address formatting</legend>
 
 <p>Addresses can also be adjusted using regular expression matching.
@@ -387,6 +391,9 @@ document.write(
 
 <script type="text/javascript">
 jQuery(function ($) {
+    $('fieldset.section > legend').click(function () {
+        $(this).siblings().toggle();
+    }).click();
     $('#units').change(function() {
         var points_per = Number($('#units').val());
         $('.measurement').each(function() {
