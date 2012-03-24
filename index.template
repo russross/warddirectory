@@ -234,8 +234,8 @@ for regular expression tutorials.</p>
   </fieldset>
 </li>{{end}}
 </ul>
-<p><a id="morephone" href="#">Click here to add another search/replace pair</a>.
-Leave a pair blank to delete it. Drag and drop to re-order the pairs.</p>
+<p><a id="morephone" href="#">Click here to add another substitution pair</a>.
+Drag and drop to change the order. Blank pairs are ignored.</p>
 <input type="hidden" id="nextphone" value="{{len .PhoneRegexps}}">
 </fieldset>
 
@@ -296,8 +296,8 @@ the help in improving the membership records.</p>
   </fieldset>
 </li>{{end}}
 </ul>
-<p><a id="moreaddress" href="#">Click here to add another search/replace pair</a>.
-Leave a pair blank to delete it. Drag and drop to re-order the pairs.</p>
+<p><a id="moreaddress" href="#">Click here to add another substitution pair</a>.
+Drag and drop to change the order. Blank pairs are ignored.</p>
 <input type="hidden" id="nextaddress" value="{{len .AddressRegexps}}">
 </fieldset>
 
