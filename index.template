@@ -375,7 +375,7 @@ your settings in it. You can upload it later yourself, or you can
 give the file to someone else to upload using their own account.</p>
 
   <p>
-    <input type="submit" name="SubmitButton" value="Save">
+    <input type="submit" id="savebutton" name="SubmitButton" value="Save">
     <input type="submit" name="SubmitButton" value="Download">
     <input type="submit" id="deletebutton" name="SubmitButton" value="Delete">
   </p>
@@ -445,6 +445,21 @@ jQuery(function ($) {
         if (!confirm("Are you sure you want to delete your setup?")) {
             return false;
         }
+    });
+    $('#savebutton').click(function () {
+        // submit using ajax to avoid reseting the csv file field
+        var data = $('#submitform').serialize();
+        data['SubmitButton'] = 'Save';
+        $.ajax({
+            type: 'POST',
+            url: '/submit',
+            data: data,
+            success: function () { window.scrollTo(0, 0); },
+            error: function (err, msg, http) {
+                alert('Oops! Save did not work! [' + msg + ', ' + http + ']');
+            }
+        });
+        return false;
     });
     $('.regexplist').sortable({
         stop: function() {

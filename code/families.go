@@ -431,7 +431,7 @@ func (dir *Directory) CompileRegexps() {
 		if strings.TrimSpace(elt.Expression) != "" {
 			dir.PhoneRegexps = append(dir.PhoneRegexps, elt)
 		}
-		if elt.Regexp, err = regexp.Compile(elt.Expression); err != nil {
+		if elt.Regexp, err = regexp.Compile("(?i:" + elt.Expression + ")"); err != nil {
 			elt.Regexp = FallbackRegexp
 			elt.Expression = "!!Error!! " + elt.Expression
 		}
@@ -442,7 +442,7 @@ func (dir *Directory) CompileRegexps() {
 		if strings.TrimSpace(elt.Expression) != "" {
 			dir.AddressRegexps = append(dir.AddressRegexps, elt)
 		}
-		if elt.Regexp, err = regexp.Compile(elt.Expression); err != nil {
+		if elt.Regexp, err = regexp.Compile("(?i:" + elt.Expression + ")"); err != nil {
 			elt.Regexp = FallbackRegexp
 			elt.Expression = "!!Error!! " + elt.Expression
 		}
