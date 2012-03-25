@@ -37,7 +37,7 @@ func init() {
 	defaultConfig.ComputeImplicitFields()
 	defaultConfig.Roman = roman
 	defaultConfig.Bold = bold
-	defaultConfig.Typewriter = typewriter
+	defaultConfig.Typewriter = lmvtt
 
 	http.HandleFunc("/", index)
 	http.HandleFunc("/submit", submit)

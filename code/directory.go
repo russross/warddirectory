@@ -11,23 +11,33 @@ import (
 )
 
 const (
-	fontPrefix                 = "fonts"
-	romanFont                  = "Times-Roman.afm"
-	boldFont                   = "Times-Bold.afm"
-	typewriterFont             = "lmvtt10.afm"
-	typewriterFontFile         = "lmvtt10.pfb"
-	typewriterStemV            = 69
-	glyphlistFile              = "glyphlist.txt"
-	CompressStreams            = true
-	FallbackGlyph              = "question"
-	FontSizePrecision          = 0.01
-	StartingFontSize   float64 = 10.0
-	MinimumFontSize    float64 = 1.0
-	MaximumFontSize    float64 = 100.0
-	Subject                    = "LDS Ward Directory"
-	Creator                    = "https://lds.org/directory/"
-	Producer                   = "http://ward-directory.appspot.com/"
+	fontPrefix                = "fonts"
+	glyphlistFile             = "glyphlist.txt"
+	CompressStreams           = true
+	FallbackGlyph             = "question"
+	FontSizePrecision         = 0.01
+	StartingFontSize  float64 = 10.0
+	MinimumFontSize   float64 = 1.0
+	MaximumFontSize   float64 = 100.0
+	Subject                   = "LDS Ward Directory"
+	Creator                   = "https://lds.org/directory/"
+	Producer                  = "http://ward-directory.appspot.com/"
 )
+
+type fontdata struct {
+	Metrics  string
+	FontFile string
+	Label    string
+	StemV    int
+}
+
+var FontList = map[string]*fontdata{
+	"times-roman": {"Times-Roman.afm", "", "FR", -1},
+	"times-bold":  {"Times-Bold.afm", "", "FB", -1},
+	"courier":     {"Courier.afm", "", "FT", -1},
+	"lmtt":        {"lmtt10.afm", "lmtt10.pfb", "FT", 69},
+	"lmvtt":       {"lmvtt10.afm", "lmvtt10.pfb", "FT", 69},
+}
 
 type RegularExpression struct {
 	Expression  string

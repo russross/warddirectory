@@ -54,32 +54,24 @@ func parseGlyphList(known map[string]bool, universal map[string]bool, filename s
 	return
 }
 
-func GlyphMapping(roman, bold, typewriter *FontMetrics, glyphlist string) (mapping map[rune]string, err error) {
-	// get the union of all the glyph names we know about
+func GlyphMapping(lst []*FontMetrics, glyphlist string) (mapping map[rune]string, err error) {
 	union := make(map[string]bool)
-	for name, _ := range roman.Glyphs {
-		union[name] = true
-	}
-	for name, _ := range bold.Glyphs {
-		union[name] = true
-	}
-	for name, _ := range typewriter.Glyphs {
-		union[name] = true
-	}
-
-	// get the intersection, too
 	intersection := make(map[string]bool)
-	for name, _ := range roman.Glyphs {
+	for name, _ := range lst[0].Glyphs {
 		intersection[name] = true
 	}
-	for name, _ := range intersection {
-		if _, present := bold.Glyphs[name]; !present {
-			delete(intersection, name)
+
+	for _, font := range lst {
+		// get the union of all the glyph names we know about
+		for name, _ := range font.Glyphs {
+			union[name] = true
 		}
-	}
-	for name, _ := range intersection {
-		if _, present := typewriter.Glyphs[name]; !present {
-			delete(intersection, name)
+
+		// get the intersection, too
+		for name, _ := range intersection {
+			if _, present := font.Glyphs[name]; !present {
+				delete(intersection, name)
+			}
 		}
 	}
 

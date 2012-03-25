@@ -64,45 +64,53 @@ type Box struct {
 	Penalty  int
 }
 
-var roman, bold, typewriter *FontMetrics
+var roman, bold, courier, lmtt, lmvtt *FontMetrics
 var unicodeToGlyph map[rune]string
 
 func init() {
 	var err error
 
 	// first load the fonts
-	if roman, err = ParseFontMetricsFile(filepath.Join(fontPrefix, romanFont), "FR"); err != nil {
-		log.Fatal("loading roman font metrics: ", err)
-	}
-	if bold, err = ParseFontMetricsFile(filepath.Join(fontPrefix, boldFont), "FB"); err != nil {
-		log.Fatal("loading bold font metrics: ", err)
-	}
-	if typewriter, err = ParseFontMetricsFile(filepath.Join(fontPrefix, typewriterFont), "FT"); err != nil {
-		log.Fatal("loading typewriter font metrics: ", err)
-	}
-
-	// this is missing from the cmtt font metric file
-	typewriter.StemV = typewriterStemV
-	if typewriter.File, err = ioutil.ReadFile(filepath.Join(fontPrefix, typewriterFontFile)); err != nil {
-		log.Fatal("loading typewriter font: ", err)
-	}
-	var compressed bytes.Buffer
-	var writer *zlib.Writer
-	if writer, err = zlib.NewWriterLevel(&compressed, zlib.BestCompression); err != nil {
-		log.Fatal("Setting up zlib compressor: ", err)
-	}
-	if _, err = writer.Write(typewriter.File); err != nil {
-		log.Fatal("Writing to zlib compressor: ", err)
-	}
-	if err = writer.Close(); err != nil {
-		log.Fatal("Closing zlib compressor: ", err)
-	}
-	typewriter.CompressedFile = compressed.Bytes()
+	roman = loadFont(FontList["times-roman"])
+	bold = loadFont(FontList["times-bold"])
+	courier = loadFont(FontList["courier"])
+	lmtt = loadFont(FontList["lmtt"])
+	lmvtt = loadFont(FontList["lmvtt"])
 
 	// get the complete list of glyphs we know about
-	if unicodeToGlyph, err = GlyphMapping(roman, bold, typewriter, filepath.Join(fontPrefix, glyphlistFile)); err != nil {
+	if unicodeToGlyph, err = GlyphMapping([]*FontMetrics{roman, bold, courier, lmtt, lmvtt}, filepath.Join(fontPrefix, glyphlistFile)); err != nil {
 		log.Fatal("loading glyph metrics: ", err)
 	}
+}
+
+func loadFont(f *fontdata) (font *FontMetrics) {
+	var err error
+
+	if font, err = ParseFontMetricsFile(filepath.Join(fontPrefix, f.Metrics), f.Label); err != nil {
+		log.Fatalf("loading font metrics [%s]: %v", f.Metrics, err)
+	}
+	if f.StemV > 0 && font.StemV <= 0 {
+		font.StemV = f.StemV
+	}
+	if f.FontFile != "" {
+		if font.File, err = ioutil.ReadFile(filepath.Join(fontPrefix, f.FontFile)); err != nil {
+			log.Fatalf("loading font [%s]: %v", f.FontFile, err)
+		}
+		var buf bytes.Buffer
+		var writer *zlib.Writer
+		if writer, err = zlib.NewWriterLevel(&buf, zlib.BestCompression); err != nil {
+			log.Fatal("Setting up zlib compressor: ", err)
+		}
+		if _, err = writer.Write(font.File); err != nil {
+			log.Fatal("Writing to zlib compressor: ", err)
+		}
+		if err = writer.Close(); err != nil {
+			log.Fatal("Closing zlib compressor: ", err)
+		}
+		font.CompressedFile = buf.Bytes()
+	}
+
+	return
 }
 
 // parse a single glyph metric line from a .afm file
