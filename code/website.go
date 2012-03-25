@@ -75,6 +75,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 	if err == datastore.ErrNoSuchEntity {
 		// use default values
 	} else if err != nil {
+		c.Infof("index: Failure loading config data from datastore: %v", err)
 		http.Error(w, "Failure loading config data from datastore: "+err.Error(),
 			http.StatusInternalServerError)
 		return
@@ -114,7 +115,8 @@ func submit(w http.ResponseWriter, r *http.Request) {
 	config.PersonalEmails = false
 
 	if err := decoder.Decode(config, r.Form); err != nil {
-		http.Error(w, "Decoding form data: "+err.Error(), http.StatusBadRequest)
+		c.Infof("Decoding form data: %v", err)
+		http.Error(w, "submit: Decoding form data: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -133,6 +135,7 @@ func submit(w http.ResponseWriter, r *http.Request) {
 	// almost always save the uploaded form data
 	if action != "Delete" {
 		if _, err := datastore.Put(c, key, config); err != nil {
+			c.Infof("submit: Saving: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -142,6 +145,7 @@ func submit(w http.ResponseWriter, r *http.Request) {
 	switch action {
 	case "Delete":
 		if err := datastore.Delete(c, key); err != nil && err != datastore.ErrNoSuchEntity {
+			c.Infof("Delete: deleting the entry: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -151,6 +155,7 @@ func submit(w http.ResponseWriter, r *http.Request) {
 		// convert it into JSON format
 		data, err := json.MarshalIndent(config, "", "    ")
 		if err != nil {
+			c.Infof("Download: json.MarshalIndent: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -165,12 +170,14 @@ func submit(w http.ResponseWriter, r *http.Request) {
 		// get the uplaoded CSV data
 		file, _, err := r.FormFile("MembershipData")
 		if err != nil {
+			c.Infof("Generate: getting MembershipData form field: %v", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		defer file.Close()
 		contents, err := ioutil.ReadAll(file)
 		if err != nil {
+			c.Infof("Generate: reading uploaded file: %v", err)
 			http.Error(w, "reading uploaded file: "+err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -190,6 +197,7 @@ func submit(w http.ResponseWriter, r *http.Request) {
 
 		// load and parse the families
 		if err = config.ParseFamilies(src); err != nil {
+			c.Infof("Generate: parsing families: %v", err)
 			http.Error(w, "parsing families: "+err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -200,6 +208,7 @@ func submit(w http.ResponseWriter, r *http.Request) {
 		// find the font size
 		var rounds int
 		if rounds, err = config.FindFontSize(); err != nil {
+			c.Infof("Generate: finding font site: %v", err)
 			http.Error(w, "finding font size: "+err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -215,6 +224,7 @@ func submit(w http.ResponseWriter, r *http.Request) {
 		// generate the PDF file
 		var pdf []byte
 		if pdf, err = config.MakePDF(); err != nil {
+			c.Infof("Generate: making the PDF: %v", err)
 			http.Error(w, "making the PDF: "+err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -243,12 +253,14 @@ func upload(w http.ResponseWriter, r *http.Request) {
 	// get the uplaoded JSON file
 	file, _, err := r.FormFile("DirectoryConfig")
 	if err != nil {
+		c.Infof("Upload: getting the DirectoryConfig form field: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
 	data, err := ioutil.ReadAll(file)
 	if err != nil {
+		c.Infof("Upload: reading the JSON file data: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -256,6 +268,7 @@ func upload(w http.ResponseWriter, r *http.Request) {
 	// unpack it (font will not be used)
 	config := defaultConfig.Copy()
 	if err = json.Unmarshal(data, config); err != nil {
+		c.Infof("Upload: unable to parse uploaded file: %v", err)
 		http.Error(w, "Unable to parse uploaded file: "+err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -263,6 +276,7 @@ func upload(w http.ResponseWriter, r *http.Request) {
 
 	// delete the old one (if any)
 	if err := datastore.Delete(c, key); err != nil && err != datastore.ErrNoSuchEntity {
+		c.Infof("Upload: deleting the old entry: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -270,6 +284,7 @@ func upload(w http.ResponseWriter, r *http.Request) {
 	// store the new one
 	config.ToDatastore()
 	if _, err := datastore.Put(c, key, config); err != nil {
+		c.Infof("Upload: saving the new entry: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
