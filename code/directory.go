@@ -11,17 +11,18 @@ import (
 )
 
 const (
-	fontPrefix                = "fonts"
-	glyphlistFile             = "glyphlist.txt"
-	CompressStreams           = true
-	FallbackGlyph             = "question"
-	FontSizePrecision         = 0.01
-	StartingFontSize  float64 = 10.0
-	MinimumFontSize   float64 = 1.0
-	MaximumFontSize   float64 = 100.0
-	Subject                   = "LDS Ward Directory"
-	Creator                   = "https://lds.org/directory/"
-	Producer                  = "http://ward-directory.appspot.com/"
+	fontPrefix                 = "fonts"
+	glyphlistFile              = "glyphlist.txt"
+	CompressStreams            = true
+	FallbackGlyph              = "question"
+	FallbackTypewriter         = "courier"
+	FontSizePrecision          = 0.01
+	StartingFontSize   float64 = 10.0
+	MinimumFontSize    float64 = 1.0
+	MaximumFontSize    float64 = 100.0
+	Subject                    = "LDS Ward Directory"
+	Creator                    = "https://lds.org/directory/"
+	Producer                   = "http://ward-directory.appspot.com/"
 )
 
 type fontdata struct {
@@ -31,7 +32,7 @@ type fontdata struct {
 	StemV    int
 }
 
-var FontList = map[string]*fontdata{
+var FontSourceList = map[string]*fontdata{
 	"times-roman": {"Times-Roman.afm", "", "FR", -1},
 	"times-bold":  {"Times-Bold.afm", "", "FB", -1},
 	"courier":     {"Courier.afm", "", "FT", -1},
@@ -60,6 +61,7 @@ type Directory struct {
 	Pages                       int
 	ColumnsPerPage              int
 	ColumnSep                   float64
+	EmailFont                   string
 	LeadingMultiplier           float64
 	MinimumSpaceMultiplier      float64
 	MinimumLineHeightMultiplier float64
@@ -112,7 +114,7 @@ func (dir *Directory) Copy() *Directory {
 
 	elt.Roman = dir.Roman.Copy()
 	elt.Bold = dir.Bold.Copy()
-	elt.Typewriter = dir.Typewriter.Copy()
+	//elt.Typewriter = dir.Typewriter.Copy()
 
 	// clear all the processed values
 	elt.Families = nil

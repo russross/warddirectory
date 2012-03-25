@@ -54,10 +54,10 @@ func parseGlyphList(known map[string]bool, universal map[string]bool, filename s
 	return
 }
 
-func GlyphMapping(lst []*FontMetrics, glyphlist string) (mapping map[rune]string, err error) {
+func GlyphMapping(lst map[string]*FontMetrics, glyphlist string) (mapping map[rune]string, err error) {
 	union := make(map[string]bool)
 	intersection := make(map[string]bool)
-	for name, _ := range lst[0].Glyphs {
+	for name, _ := range lst["times-roman"].Glyphs {
 		intersection[name] = true
 	}
 

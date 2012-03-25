@@ -24,7 +24,11 @@ func init() {
 	var err error
 
 	// now load the templates
-	t = template.Must(template.ParseFiles("index.template"))
+	t = new(template.Template)
+	t.Funcs(template.FuncMap{
+		"ifEqual": ifEqual,
+	})
+	template.Must(t.ParseFiles("index.template"))
 
 	// load the default config file
 	var raw []byte
@@ -35,13 +39,25 @@ func init() {
 		log.Fatal("Unable to parse default config file: ", err)
 	}
 	defaultConfig.ComputeImplicitFields()
-	defaultConfig.Roman = roman
-	defaultConfig.Bold = bold
-	defaultConfig.Typewriter = lmvtt
+	defaultConfig.Roman = FontList["times-roman"]
+	defaultConfig.Bold = FontList["times-bold"]
 
 	http.HandleFunc("/", index)
 	http.HandleFunc("/submit", submit)
 	http.HandleFunc("/upload", upload)
+}
+
+// if the first arguments match each other, return the last as a string
+func ifEqual(args ...interface{}) string {
+	for i := 0; i < len(args)-2; i++ {
+		if args[i] != args[i+1] {
+			return ""
+		}
+	}
+	if len(args) == 0 {
+		return ""
+	}
+	return args[len(args)-1].(string)
 }
 
 func index(w http.ResponseWriter, r *http.Request) {
@@ -53,7 +69,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 	}
 	key := datastore.NewKey(c, "Config", u.Email, 0, nil)
 
-	// load the user's config data
+	// load the user's config data (fonts will not be used)
 	config := defaultConfig.Copy()
 	err := datastore.Get(c, key, config)
 	if err == datastore.ErrNoSuchEntity {
@@ -100,6 +116,13 @@ func submit(w http.ResponseWriter, r *http.Request) {
 	if err := decoder.Decode(config, r.Form); err != nil {
 		http.Error(w, "Decoding form data: "+err.Error(), http.StatusBadRequest)
 		return
+	}
+
+	// set the typewriter font
+	if font, present := FontList[config.EmailFont]; present {
+		config.Typewriter = font.Copy()
+	} else {
+		config.Typewriter = FontList[FallbackTypewriter].Copy()
 	}
 	config.CompileRegexps()
 	config.ComputeImplicitFields()
@@ -230,7 +253,7 @@ func upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// unpack it
+	// unpack it (font will not be used)
 	config := defaultConfig.Copy()
 	if err = json.Unmarshal(data, config); err != nil {
 		http.Error(w, "Unable to parse uploaded file: "+err.Error(), http.StatusBadRequest)

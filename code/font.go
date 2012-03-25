@@ -64,6 +64,8 @@ type Box struct {
 	Penalty  int
 }
 
+var FontList map[string]*FontMetrics
+
 var roman, bold, courier, lmtt, lmvtt *FontMetrics
 var unicodeToGlyph map[rune]string
 
@@ -71,14 +73,13 @@ func init() {
 	var err error
 
 	// first load the fonts
-	roman = loadFont(FontList["times-roman"])
-	bold = loadFont(FontList["times-bold"])
-	courier = loadFont(FontList["courier"])
-	lmtt = loadFont(FontList["lmtt"])
-	lmvtt = loadFont(FontList["lmvtt"])
+	FontList = make(map[string]*FontMetrics)
+	for name, font := range FontSourceList {
+		FontList[name] = loadFont(font)
+	}
 
 	// get the complete list of glyphs we know about
-	if unicodeToGlyph, err = GlyphMapping([]*FontMetrics{roman, bold, courier, lmtt, lmvtt}, filepath.Join(fontPrefix, glyphlistFile)); err != nil {
+	if unicodeToGlyph, err = GlyphMapping(FontList, filepath.Join(fontPrefix, glyphlistFile)); err != nil {
 		log.Fatal("loading glyph metrics: ", err)
 	}
 }

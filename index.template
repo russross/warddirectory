@@ -178,6 +178,25 @@ printing on a single page, 3 or more might look better.</p>
     <input type="text" class="measurement" id="user_ColumnSep" name="user_ColumnSep" value="">
     <input type="hidden" id="ColumnSep" name="ColumnSep" value="{{.ColumnSep | html}}">
   </p>
+
+<p>Email addresses are set in a typewriter font. The default of
+Latin Modern Proportional looks good, but you may prefer normal
+Latin Modern, where every character is the same width. Another
+option is Courier, which does not look as good and takes more space
+on the page. The main advantage to Courier is that PDF viewers have
+it built in, so it does not need to be included in the PDF file. The
+result is a much smaller PDF file. This usually only matters when
+you are distributing the PDF file itself, but the option is
+there.</p>
+
+  <p>
+    <label for="EmailFont">Email address font</label>
+    <select id="EmailFont" name="EmailFont">
+      <option value="lmvtt"{{ifEqual .EmailFont "lmvtt" ` selected="selected"`}}>Latin Modern (proportional)</option>
+      <option value="lmtt"{{ifEqual .EmailFont "lmtt" ` selected="selected"`}}>Latin Modern (fixed width)</option>
+      <option value="courier"{{ifEqual .EmailFont "courier"` selected="selected"`}}>Courier (fixed width)</option>
+    </select>
+  </p>
 </fieldset>
 
 <fieldset class="section">

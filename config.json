@@ -12,6 +12,7 @@
     "Pages": 2,
     "ColumnsPerPage": 2,
     "ColumnSep": 10,
+    "EmailFont": "lmvtt",
 
     "FullFamily": true,
     "FamilyPhone": true,
