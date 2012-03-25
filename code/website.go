@@ -6,60 +6,22 @@ import (
 	"appengine/user"
 	"bytes"
 	"code.google.com/p/gorilla/schema"
-	"compress/zlib"
 	"encoding/json"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"path/filepath"
 	"strings"
 	"text/template"
 	"unicode/utf8"
 )
 
 var t *template.Template
-var roman, bold, typewriter *FontMetrics
-var unicodeToGlyph map[rune]string
 var defaultConfig Directory
 var decoder = schema.NewDecoder()
 
 func init() {
 	var err error
-
-	// first load the fonts
-	if roman, err = ParseFontMetricsFile(filepath.Join(fontPrefix, romanFont), "FR"); err != nil {
-		log.Fatal("loading roman font metrics: ", err)
-	}
-	if bold, err = ParseFontMetricsFile(filepath.Join(fontPrefix, boldFont), "FB"); err != nil {
-		log.Fatal("loading bold font metrics: ", err)
-	}
-	if typewriter, err = ParseFontMetricsFile(filepath.Join(fontPrefix, typewriterFont), "FT"); err != nil {
-		log.Fatal("loading typewriter font metrics: ", err)
-	}
-
-	// get the complete list of glyphs we know about
-	if unicodeToGlyph, err = GlyphMapping(roman, bold, typewriter, filepath.Join(fontPrefix, glyphlistFile)); err != nil {
-		log.Fatal("loading glyph metrics: ", err)
-	}
-
-	// this is missing from the cmtt font metric file
-	typewriter.StemV = typewriterStemV
-	if typewriter.File, err = ioutil.ReadFile(filepath.Join(fontPrefix, typewriterFontFile)); err != nil {
-		log.Fatal("loading typewriter font: ", err)
-	}
-	var compressed bytes.Buffer
-	var writer *zlib.Writer
-	if writer, err = zlib.NewWriterLevel(&compressed, zlib.BestCompression); err != nil {
-		log.Fatal("Setting up zlib compressor: ", err)
-	}
-	if _, err = writer.Write(typewriter.File); err != nil {
-		log.Fatal("Writing to zlib compressor: ", err)
-	}
-	if err = writer.Close(); err != nil {
-		log.Fatal("Closing zlib compressor: ", err)
-	}
-	typewriter.CompressedFile = compressed.Bytes()
 
 	// now load the templates
 	t = template.Must(template.ParseFiles("index.template"))

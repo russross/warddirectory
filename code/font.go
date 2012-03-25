@@ -6,9 +6,13 @@
 package main
 
 import (
+	"bytes"
+	"compress/zlib"
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
+	"path/filepath"
 	"strings"
 )
 
@@ -60,6 +64,47 @@ type Box struct {
 	Penalty  int
 }
 
+var roman, bold, typewriter *FontMetrics
+var unicodeToGlyph map[rune]string
+
+func init() {
+	var err error
+
+	// first load the fonts
+	if roman, err = ParseFontMetricsFile(filepath.Join(fontPrefix, romanFont), "FR"); err != nil {
+		log.Fatal("loading roman font metrics: ", err)
+	}
+	if bold, err = ParseFontMetricsFile(filepath.Join(fontPrefix, boldFont), "FB"); err != nil {
+		log.Fatal("loading bold font metrics: ", err)
+	}
+	if typewriter, err = ParseFontMetricsFile(filepath.Join(fontPrefix, typewriterFont), "FT"); err != nil {
+		log.Fatal("loading typewriter font metrics: ", err)
+	}
+
+	// this is missing from the cmtt font metric file
+	typewriter.StemV = typewriterStemV
+	if typewriter.File, err = ioutil.ReadFile(filepath.Join(fontPrefix, typewriterFontFile)); err != nil {
+		log.Fatal("loading typewriter font: ", err)
+	}
+	var compressed bytes.Buffer
+	var writer *zlib.Writer
+	if writer, err = zlib.NewWriterLevel(&compressed, zlib.BestCompression); err != nil {
+		log.Fatal("Setting up zlib compressor: ", err)
+	}
+	if _, err = writer.Write(typewriter.File); err != nil {
+		log.Fatal("Writing to zlib compressor: ", err)
+	}
+	if err = writer.Close(); err != nil {
+		log.Fatal("Closing zlib compressor: ", err)
+	}
+	typewriter.CompressedFile = compressed.Bytes()
+
+	// get the complete list of glyphs we know about
+	if unicodeToGlyph, err = GlyphMapping(roman, bold, typewriter, filepath.Join(fontPrefix, glyphlistFile)); err != nil {
+		log.Fatal("loading glyph metrics: ", err)
+	}
+}
+
 // parse a single glyph metric line from a .afm file
 func (font *FontMetrics) ParseGlyph(in string) error {
 	// sample: C 102 ; WX 333 ; N f ; B 20 0 383 683 ; L i fi ; L l fl ;
@@ -92,10 +137,11 @@ func (font *FontMetrics) ParseGlyph(in string) error {
 		return errors.New("No glyph name found in metric line: [" + in + "]")
 	}
 
-	if _, present := font.Glyphs[glyph.Name]; present {
-		panic("Duplicate glyph found while parsing font metrics file")
+	if other, present := font.Glyphs[glyph.Name]; present && 0x20 <= other.Code && other.Code < 0x80 {
+		// keep the one with an ascii code
+	} else {
+		font.Glyphs[glyph.Name] = glyph
 	}
-	font.Glyphs[glyph.Name] = glyph
 
 	return nil
 }

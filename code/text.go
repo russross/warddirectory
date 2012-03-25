@@ -546,7 +546,7 @@ func (dir *Directory) FindFontSize() (rounds int, err error) {
 		for {
 			high *= math.Sqrt2
 			if high > MaximumFontSize {
-				return rounds, errors.New("Exceeded maximum font size")
+				return rounds, errors.New("Exceeded maximum font size: include more data to fill up the pages")
 			}
 
 			dir.FontSize = high
@@ -560,7 +560,7 @@ func (dir *Directory) FindFontSize() (rounds int, err error) {
 		for {
 			low /= math.Sqrt2
 			if low < MinimumFontSize {
-				return rounds, errors.New("Exceeded minimum font size")
+				return rounds, errors.New("Exceeded minimum font size: use more pages or include less data")
 			}
 
 			dir.FontSize = low
