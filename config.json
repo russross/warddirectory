@@ -2,6 +2,13 @@
     "Title": "Your Ward Name Goes Here",
     "Disclaimer": "For Church Use Only",
     "DateFormat": "January 2, 2006",
+    "TitleFontSize": 14,
+    "HeaderFontSize": 10,
+
+    "FooterLeft": "",
+    "FooterCenter": "",
+    "FooterRight": "Created using http://ward-directory.appspot.com/",
+    "FooterFontSize": 7,
 
     "PageWidth": 612,
     "PageHeight": 792,
@@ -24,7 +31,6 @@
     "LeadingMultiplier": 1.2,
     "MinimumSpaceMultiplier": 0.85,
     "MinimumLineHeightMultiplier": 0.95,
-    "TitleFontSize": 14,
     "FirstLineDedentMultiplier": 1.61803398874989484820,
 
     "PhoneRegexps": [

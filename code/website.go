@@ -214,8 +214,9 @@ func submit(w http.ResponseWriter, r *http.Request) {
 		}
 		c.Infof("Found font size %.3f in %d rounds", config.FontSize, rounds)
 
-		// render the header
+		// render the header and footer
 		config.RenderHeader()
+		config.RenderFooter()
 
 		// render the family listings
 		config.SplitIntoLines()

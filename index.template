@@ -95,6 +95,30 @@ defaults to “For Church Use Only”.</p>
 </fieldset>
 
 <fieldset class="section">
+<legend>Page footer</legend>
+<p>You can customize the footer text. This can be helpful if you need to
+explain obscure abbreviations, or if you want to invite people to contact you
+with corrections. Leave all three blank and the footer will be omitted.</p>
+
+  <p>
+    <label for="FooterLeft">Left-flushed text</label>
+	<input type="text" id="FooterLeft" name="FooterLeft" value="{{.FooterLeft | html}}">
+  </p>
+  <p>
+    <label for="FooterCenter">Centered text</label>
+	<input type="text" id="FooterCenter" name="FooterCenter" value="{{.FooterCenter | html}}">
+  </p>
+  <p>
+    <label for="FooterRight">Right-flushed text</label>
+	<input type="text" id="FooterRight" name="FooterRight" value="{{.FooterRight | html}}">
+  </p>
+
+<p>The footer is placed in the bottom margin, so you may need to adjust your
+margins accordingly.</p>
+
+</fieldset>
+
+<fieldset class="section">
 <legend>Page layout</legend>
 <p>All of the measurements are given in
 <select id="units">

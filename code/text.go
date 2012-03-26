@@ -490,17 +490,17 @@ func (dir *Directory) RenderHeader() {
 
 	// place the date
 	text += fmt.Sprintf("1 0 0 1 %.3f %.3f Tm\n", dir.LeftMargin, y)
-	text += fmt.Sprintf("/%s %.3f Tf %s\n", dir.Roman.Label, dir.FontSize, date.Command)
+	text += fmt.Sprintf("/%s %.3f Tf %s\n", dir.Roman.Label, dir.HeaderFontSize, date.Command)
 
 	// place the title
 	text += fmt.Sprintf("1 0 0 1 %.3f %.3f Tm\n",
 		(dir.PageWidth-title.Width/1000.0*dir.TitleFontSize)/2.0, y)
 	text += fmt.Sprintf("/%s %.3f Tf %s\n", dir.Bold.Label, dir.TitleFontSize, title.Command)
 
-	// place the church-use-only text
+	// place the disclaimer
 	text += fmt.Sprintf("1 0 0 1 %.3f %.3f Tm\n",
-		dir.PageWidth-dir.RightMargin-useonly.Width/1000.0*dir.FontSize, y)
-	text += fmt.Sprintf("/%s %.3f Tf %s\n", dir.Roman.Label, dir.FontSize, useonly.Command)
+		dir.PageWidth-dir.RightMargin-useonly.Width/1000.0*dir.HeaderFontSize, y)
+	text += fmt.Sprintf("/%s %.3f Tf %s\n", dir.Roman.Label, dir.HeaderFontSize, useonly.Command)
 
 	text += "ET\n"
 
@@ -511,6 +511,57 @@ func (dir *Directory) RenderHeader() {
 	text += "Q\n0 g 0 G\n"
 
 	dir.Header = text
+}
+
+func (dir *Directory) RenderFooter() {
+	if dir.FooterLeft == "" && dir.FooterCenter == "" && dir.FooterRight == "" {
+		dir.Footer = ""
+		return
+	}
+
+	var left, center, right *Box
+	if dir.FooterLeft != "" {
+		left = dir.Roman.MakeBox(dir.FooterLeft, 1.0)
+	}
+	if dir.FooterCenter != "" {
+		center = dir.Roman.MakeBox(dir.FooterCenter, 1.0)
+	}
+	if dir.FooterRight != "" {
+		right = dir.Roman.MakeBox(dir.FooterRight, 1.0)
+	}
+
+	// figure out where the hrule goes
+	length := dir.PageWidth - dir.RightMargin - dir.LeftMargin
+	hrule := dir.BottomMargin - dir.FontSize*(1.0-float64(dir.Roman.CapHeight)/1000.0)
+	y := hrule - dir.FooterFontSize
+
+	text := "0 g 0 G\n"
+	text += "BT\n"
+
+	if left != nil {
+		text += fmt.Sprintf("1 0 0 1 %.3f %.3f Tm\n", dir.LeftMargin, y)
+		text += fmt.Sprintf("/%s %.3f Tf %s\n", dir.Roman.Label, dir.FooterFontSize, left.Command)
+	}
+	if center != nil {
+		text += fmt.Sprintf("1 0 0 1 %.3f %.3f Tm\n",
+			(dir.PageWidth-center.Width/1000.0*dir.FooterFontSize)/2.0, y)
+		text += fmt.Sprintf("/%s %.3f Tf %s\n", dir.Roman.Label, dir.FooterFontSize, center.Command)
+	}
+	if right != nil {
+		text += fmt.Sprintf("1 0 0 1 %.3f %.3f Tm\n",
+			dir.PageWidth-dir.RightMargin-right.Width/1000.0*dir.FooterFontSize, y)
+		text += fmt.Sprintf("/%s %.3f Tf %s\n", dir.Roman.Label, dir.FooterFontSize, right.Command)
+	}
+
+	text += "ET\n"
+
+	// place the hrule
+	text += "q\n"
+	text += fmt.Sprintf("1 0 0 1 %.3f %.3f cm\n", dir.LeftMargin, hrule)
+	text += fmt.Sprintf("[]0 d 0 J 0.5 w 0 0 m %.3f 0 l s\n", length)
+	text += "Q\n0 g 0 G\n"
+
+	dir.Footer = text
 }
 
 func (dir *Directory) DoLayout() (success bool) {

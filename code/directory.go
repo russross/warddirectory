@@ -52,6 +52,12 @@ type Directory struct {
 	Title                       string
 	DateFormat                  string
 	Disclaimer                  string
+	TitleFontSize               float64
+	HeaderFontSize              float64
+	FooterLeft                  string
+	FooterCenter                string
+	FooterRight                 string
+	FooterFontSize              float64
 	PageWidth                   float64
 	PageHeight                  float64
 	TopMargin                   float64
@@ -65,7 +71,6 @@ type Directory struct {
 	LeadingMultiplier           float64
 	MinimumSpaceMultiplier      float64
 	MinimumLineHeightMultiplier float64
-	TitleFontSize               float64
 	FirstLineDedentMultiplier   float64
 	FullFamily                  bool
 	FamilyPhone                 bool
@@ -101,6 +106,7 @@ type Directory struct {
 	FontSize     float64    `json:"-" schema:"-" datastore:"-"`
 	Columns      []string   `json:"-" schema:"-" datastore:"-"`
 	Header       string     `json:"-" schema:"-" datastore:"-"`
+	Footer       string     `json:"-" schema:"-" datastore:"-"`
 	Author       string     `json:"-" schema:"-" datastore:"-"`
 }
 
@@ -125,6 +131,7 @@ func (dir *Directory) Copy() *Directory {
 	elt.FontSize = 0.0
 	elt.Columns = nil
 	elt.Header = ""
+	elt.Footer = ""
 	elt.Author = ""
 
 	return elt
@@ -256,6 +263,7 @@ func (dir *Directory) MakePDF() (pdf []byte, err error) {
 			text += dir.Columns[col]
 			col++
 		}
+		text += dir.Footer
 		contents := &PDFStream{
 			Map:  PDFMap{},
 			Data: []byte(text),
