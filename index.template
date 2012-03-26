@@ -382,6 +382,46 @@ Drag and drop to change the order. Blank pairs are ignored.</p>
 <input type="hidden" id="nextaddress" value="{{len .AddressRegexps}}">
 </fieldset>
 
+<fieldset class="section">
+<legend>Name adjustments</legend>
+
+<p>Names can also be adjusted. The church stores a member's
+preferred name in addition to his/her full name. In practice, this
+is often the same as the full name and can be needlessly verbose.
+Shortening some of those names can make the directory more readable,
+and it also enables a larger font size.</p>
+
+<p>Be careful that the adjustments you create are specific enough
+that you do not accidently modify entries that you did not intend
+to.</p>
+
+<p>You can also use this to correct errors in the records, but it is
+better to fix the errors than to work around them.  Make a list of
+errors that you find and give it to your membership clerk (or ward
+clerk) with a polite request to fix it. Most clerks will be grateful
+for the help in improving the membership records.</p>
+
+<ul id="nameregexplist" class="regexplist">
+{{range $i, $elt := .NameRegexps}}
+<li>
+  <fieldset>
+  <legend>Name substitution</legend>
+  <p>
+    <label for="NameRegexps.{{$i}}.Expression">Search for</label>
+    <input type="text" id="NameRegexps.{{$i}}.Expression" name="NameRegexps.{{$i}}.Expression" value="{{$elt.Expression | html}}">
+  </p>
+  <p>
+    <label for="NameRegexps.{{$i}}.Replacement">Replace with</label>
+    <input type="text" id="NameRegexps.{{$i}}.Replacement" name="NameRegexps.{{$i}}.Replacement" value="{{$elt.Replacement | html}}">
+  </p>
+  </fieldset>
+</li>{{end}}
+</ul>
+<p><a id="morename" href="#">Click here to add another substitution pair</a>.
+Drag and drop to change the order. Blank pairs are ignored.</p>
+<input type="hidden" id="nextname" value="{{len .NameRegexps}}">
+</fieldset>
+
 <p>Be sure to save the changes you make. They will be there next
 time you come to print an updated directory, so you can just
 download the latest listing from lds.org and generate a new
@@ -529,6 +569,22 @@ jQuery(function ($) {
         s += '  <input type="text" id="' + repl + '" name="' + repl + '" value="">\n';
         s += '</p>\n</fieldset>\n';
         $('#addressregexplist').append(s);
+        return false;
+    });
+    $('#morename').click(function () {
+        var n = $('#nextname').val();
+        $('#nextname').val(Number(n)+1);
+        var expr = 'NameRegexps.' + n + '.Expression';
+        var repl = 'NameRegexps.' + n + '.Replacement';
+        var s = '<fieldset>\n<legend>Name substitution</legend>\n<p>\n';
+        s += '  <label for="' + expr + '">Search for</label>\n';
+        s += '  <input type="text" id="' + expr + '" name="' + expr + '" value="">\n';
+        s += '</p>\n';
+        s += '<p>\n';
+        s += '  <label for="' + repl + '">Replace with</label>\n';
+        s += '  <input type="text" id="' + repl + '" name="' + repl + '" value="">\n';
+        s += '</p>\n</fieldset>\n';
+        $('#nameregexplist').append(s);
         return false;
     });
 });

@@ -83,9 +83,10 @@ func index(w http.ResponseWriter, r *http.Request) {
 		config.FromDatastore()
 	}
 
-	// append a blank phone regexp and a blank address regexp
+	// append a blank entry to each regexp list
 	config.PhoneRegexps = append(config.PhoneRegexps, &RegularExpression{})
 	config.AddressRegexps = append(config.AddressRegexps, &RegularExpression{})
+	config.NameRegexps = append(config.NameRegexps, &RegularExpression{})
 
 	tmpl := t.Lookup("index.template")
 	tmpl.Execute(w, config)

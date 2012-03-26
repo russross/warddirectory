@@ -77,6 +77,17 @@ var headerFields = []string{
 	"Child Name", "Child Phone", "Child Email",
 }
 
+func prepName(regexps []*RegularExpression, name string) string {
+	// prepare name
+	for _, re := range regexps {
+		name = re.Regexp.ReplaceAllString(strings.TrimSpace(name), re.Replacement)
+		name = Spaces.ReplaceAllString(name, " ")
+		name = strings.TrimSpace(name)
+	}
+
+	return name
+}
+
 func prepAddress(regexps []*RegularExpression, address string) string {
 	// prepare address
 	for _, re := range regexps {
@@ -169,8 +180,23 @@ func (dir *Directory) ParseFamilies(src io.Reader) error {
 		}
 
 		// prepare couple name
-		if strings.HasPrefix(family.Couple, family.Surname+", ") {
-			family.Couple = family.Couple[len(family.Surname)+2:]
+		if !dir.FullFamily {
+			if strings.HasPrefix(family.Couple, family.Surname+", ") {
+				family.Couple = family.Couple[len(family.Surname)+2:]
+			}
+
+			// run each name through the regexps
+			couple := family.Couple
+			family.Couple = ""
+			for i, name := range strings.Split(couple, " & ") {
+				name = prepName(dir.NameRegexps, name)
+				if i > 0 {
+					family.Couple += " & "
+				}
+				family.Couple += name
+			}
+		} else {
+			family.Couple = ""
 		}
 
 		// prepare address
@@ -203,6 +229,9 @@ func (dir *Directory) ParseFamilies(src io.Reader) error {
 			if person.Name == "" {
 				continue
 			}
+
+			// prepare name
+			person.Name = prepName(dir.NameRegexps, person.Name)
 
 			// only show surname if different from family name
 			if strings.HasPrefix(strings.ToLower(person.Name), strings.ToLower(family.Surname)+", ") {
@@ -294,7 +323,7 @@ func (dir *Directory) FormatFamilies() {
 		needcomma := false
 
 		// next the couple name (if that is all that was requested)
-		if family.Couple != "" && !dir.FullFamily {
+		if family.Couple != "" {
 			if needcomma {
 				entry = packBox(entry, ",", -1, dir.Roman)
 				needcomma = false
@@ -441,6 +470,17 @@ func (dir *Directory) CompileRegexps() {
 	for _, elt := range address {
 		if strings.TrimSpace(elt.Expression) != "" {
 			dir.AddressRegexps = append(dir.AddressRegexps, elt)
+		}
+		if elt.Regexp, err = regexp.Compile("(?i:" + elt.Expression + ")"); err != nil {
+			elt.Regexp = FallbackRegexp
+			elt.Expression = "!!Error!! " + elt.Expression
+		}
+	}
+	name := dir.NameRegexps
+	dir.NameRegexps = nil
+	for _, elt := range name {
+		if strings.TrimSpace(elt.Expression) != "" {
+			dir.NameRegexps = append(dir.NameRegexps, elt)
 		}
 		if elt.Regexp, err = regexp.Compile("(?i:" + elt.Expression + ")"); err != nil {
 			elt.Regexp = FallbackRegexp

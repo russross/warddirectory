@@ -81,11 +81,14 @@ type Directory struct {
 
 	PhoneRegexps   []*RegularExpression `datastore:"-"`
 	AddressRegexps []*RegularExpression `datastore:"-"`
+	NameRegexps    []*RegularExpression `datastore:"-"`
 
 	PhoneExpressions    []string `json:"-" schema:"-"`
 	PhoneReplacements   []string `json:"-" schema:"-"`
 	AddressExpressions  []string `json:"-" schema:"-"`
 	AddressReplacements []string `json:"-" schema:"-"`
+	NameExpressions     []string `json:"-" schema:"-"`
+	NameReplacements    []string `json:"-" schema:"-"`
 
 	// fonts
 	Roman      *FontMetrics `json:"-" schema:"-" datastore:"-"`
@@ -155,6 +158,14 @@ func (dir *Directory) FromDatastore() {
 		}
 		dir.AddressRegexps = append(dir.AddressRegexps, re)
 	}
+	dir.NameRegexps = nil
+	for i := 0; i < len(dir.NameExpressions) && i < len(dir.NameReplacements); i++ {
+		re := &RegularExpression{
+			Expression:  dir.NameExpressions[i],
+			Replacement: dir.NameReplacements[i],
+		}
+		dir.NameRegexps = append(dir.NameRegexps, re)
+	}
 }
 
 func (dir *Directory) ToDatastore() {
@@ -178,6 +189,16 @@ func (dir *Directory) ToDatastore() {
 		}
 		dir.AddressExpressions = append(dir.AddressExpressions, re.Expression)
 		dir.AddressReplacements = append(dir.AddressReplacements, re.Replacement)
+	}
+	dir.NameExpressions = nil
+	dir.NameReplacements = nil
+	for _, re := range dir.NameRegexps {
+		if strings.TrimSpace(re.Expression) == "" {
+			// skip empty regexps
+			continue
+		}
+		dir.NameExpressions = append(dir.NameExpressions, re.Expression)
+		dir.NameReplacements = append(dir.NameReplacements, re.Replacement)
 	}
 }
 
