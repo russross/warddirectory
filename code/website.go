@@ -101,9 +101,24 @@ func submit(w http.ResponseWriter, r *http.Request) {
 	}
 	key := datastore.NewKey(c, "Config", u.Email, 0, nil)
 
-	// fill it in using data from the submitted form
-	r.ParseMultipartForm(1e6)
+	// start with the default config
 	config := defaultConfig.Copy()
+
+	// load saved config into it
+	err := datastore.Get(c, key, config)
+	if err == datastore.ErrNoSuchEntity {
+		// use default values
+	} else if err != nil {
+		c.Infof("submit: Failure loading config data from datastore: %v", err)
+		http.Error(w, "Failure loading config data from datastore: "+err.Error(),
+			http.StatusInternalServerError)
+		return
+	} else {
+		config.FromDatastore()
+	}
+
+	// next fill it in using data from the submitted form
+	r.ParseMultipartForm(1e6)
 	config.Author = u.Email
 
 	// checkboxes are missing if false, so set the checkbox
