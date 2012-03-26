@@ -212,25 +212,31 @@ func (dir *Directory) MakePDF() (pdf []byte, err error) {
 	}
 	catalog_ref := doc.TopLevelObject(catalog)
 
-	// build the fonts
-	var roman_ref, bold_ref, typewriter_ref PDFRef
-	if roman_ref, err = doc.MakeFont(dir.Roman); err != nil {
-		return
-	}
-	if bold_ref, err = doc.MakeFont(dir.Bold); err != nil {
-		return
-	}
-	if typewriter_ref, err = doc.MakeFont(dir.Typewriter); err != nil {
-		return
-	}
-
 	// the list of fonts, shared by all pages
-	fontResource := PDFMap{
-		"FR": roman_ref,
-		"FB": bold_ref,
-		"FT": typewriter_ref,
-	}
+	fontResource := PDFMap{}
 	fontResource_ref := doc.TopLevelObject(fontResource)
+
+	// build the fonts
+	// only add fonts that were actually used
+	var roman_ref, bold_ref, typewriter_ref PDFRef
+	if dir.Roman.LastChar > 0 {
+		if roman_ref, err = doc.MakeFont(dir.Roman); err != nil {
+			return
+		}
+		fontResource["FR"] = roman_ref
+	}
+	if dir.Bold.LastChar > 0 {
+		if bold_ref, err = doc.MakeFont(dir.Bold); err != nil {
+			return
+		}
+		fontResource["FB"] = bold_ref
+	}
+	if dir.Typewriter.LastChar > 0 {
+		if typewriter_ref, err = doc.MakeFont(dir.Typewriter); err != nil {
+			return
+		}
+		fontResource["FT"] = typewriter_ref
+	}
 
 	// build the list of pages
 	kids := PDFSlice(nil)
