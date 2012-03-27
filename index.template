@@ -5,8 +5,8 @@
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
 <title>Ward Directory Generator</title>
 <link href="/site.css" type="text/css" rel="stylesheet" title="site">
-<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.18/jquery-ui.min.js"></script>
+<script type="text/javascript" src="/jquery.min.js"></script>
+<script type="text/javascript" src="/jquery-ui.min.js"></script>
 </head>
 
 <body>
@@ -20,6 +20,9 @@ It uses ward directory data that anyone with an lds.org account can
 download and formats it on two pages. This lets you easily print a
 nice ward directory that fits on one double-sided sheet of
 paper.</p>
+
+<p>If you plan to distribute this to your ward, please make sure
+that you get approval from your local leaders.</p>
 
 <p>To use it, you must first download the directory information for
 your ward.  Follow this link:</p>

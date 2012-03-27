@@ -7,6 +7,17 @@ handlers:
 - url: /site.css
   static_files: site.css
   upload: site.css
+  secure: always
+
+- url: /jquery.min.js
+  static_files: jquery.min.js
+  upload: jquery.min.js
+  secure: always
+
+- url: /jquery-ui.min.js
+  static_files: jquery-ui.min.js
+  upload: jquery-ui.min.js
+  secure: always
 
 - url: /favicon.ico
   static_files: favicon.ico
@@ -18,4 +29,5 @@ handlers:
 
 - url: /(submit|upload)?
   login: required
+  secure: always
   script: _go_app
