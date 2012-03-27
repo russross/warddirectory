@@ -61,6 +61,12 @@ side.</p>
 can customize your directory. At a minimum, open the “Page header”
 section so you can set the name of your ward.</p>
 
+<p>You may wish to tweak the settings to reduce unnecessary
+information. Less information means a larger, more readable font
+size. For example, if all of your ward members are in the city, you
+can remove the city name and zip code, resulting in a less
+cluttered, easier to read directory.</p>
+
 <fieldset class="section">
 <legend>Page header</legend>
 <p>You can customize the output. Start by entering the name of your

@@ -228,7 +228,8 @@ func submit(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "finding font size: "+err.Error(), http.StatusBadRequest)
 			return
 		}
-		c.Infof("Found font size %.3f in %d rounds", config.FontSize, rounds)
+		c.Infof("Found font size %.3f in %d rounds [%s]",
+			config.FontSize, rounds, u.Email)
 
 		// render the header and footer
 		config.RenderHeader()
