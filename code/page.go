@@ -312,6 +312,16 @@ defaults to “For Church Use Only”.</p>
 explain obscure abbreviations, or if you want to invite people to contact you
 with corrections. Leave all three blank and the footer will be omitted.</p>
 
+<p>The following is quoted from the Handbook:</p>
+
+<blockquote>The beginning of each directory should include a
+statement that it is to be used only for Church purposes and should
+not be copied without permission of the bishop or stake
+president.</blockquote>
+
+<p>You may
+rearrange the footers, but please include the required text.<p>
+
   <p>
     <label for="FooterLeft">Left-flushed text</label>
 	<input type="text" class="save" id="FooterLeft" name="FooterLeft" value="{{.FooterLeft | html}}">
