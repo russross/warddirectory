@@ -8,11 +8,10 @@ package main
 import (
 	"bytes"
 	"compress/zlib"
+	"encoding/base64"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"path/filepath"
 	"strings"
 )
 
@@ -79,7 +78,7 @@ func init() {
 	}
 
 	// get the complete list of glyphs we know about
-	if unicodeToGlyph, err = GlyphMapping(FontList, filepath.Join(fontPrefix, glyphlistFile)); err != nil {
+	if unicodeToGlyph, err = GlyphMapping(FontList, string(MustDecodeBase64(glyphlist_txt))); err != nil {
 		log.Fatal("loading glyph metrics: ", err)
 	}
 }
@@ -87,16 +86,14 @@ func init() {
 func loadFont(f *fontdata) (font *FontMetrics) {
 	var err error
 
-	if font, err = ParseFontMetricsFile(filepath.Join(fontPrefix, f.Metrics), f.Label); err != nil {
-		log.Fatalf("loading font metrics [%s]: %v", f.Metrics, err)
+	if font, err = ParseFontMetricsFile(string(MustDecodeBase64(f.Metrics)), f.Label); err != nil {
+		log.Fatalf("loading font metrics: %v", err)
 	}
 	if f.StemV > 0 && font.StemV <= 0 {
 		font.StemV = f.StemV
 	}
-	if f.FontFile != "" {
-		if font.File, err = ioutil.ReadFile(filepath.Join(fontPrefix, f.FontFile)); err != nil {
-			log.Fatalf("loading font [%s]: %v", f.FontFile, err)
-		}
+	if len(f.FontFile) > 0 {
+		font.File = MustDecodeBase64(f.FontFile)
 		var buf bytes.Buffer
 		var writer *zlib.Writer
 		if writer, err = zlib.NewWriterLevel(&buf, zlib.BestCompression); err != nil {
@@ -175,16 +172,12 @@ func (font *FontMetrics) ParseKerning(in string) error {
 
 // parse and entire .afm file
 func ParseFontMetricsFile(file string, label string) (font *FontMetrics, err error) {
-	contents, err := ioutil.ReadFile(file)
-	if err != nil {
-		return
-	}
 	font = &FontMetrics{
 		Glyphs: make(map[string]*GlyphMetrics),
 		Label:  label,
 		Flags:  1<<1 | 1<<5,
 	}
-	lines := strings.Split(string(contents), "\n")
+	lines := strings.Split(file, "\n")
 	for i := 0; i < len(lines); i++ {
 		line := strings.TrimSpace(lines[i])
 		a, b, c, d, count := 0, 0, 0, 0, 0
@@ -246,4 +239,13 @@ func (font *FontMetrics) Copy() *FontMetrics {
 	elt.FirstChar = 0
 	elt.LastChar = 0
 	return elt
+}
+
+func MustDecodeBase64(data string) []byte {
+	// decode the base64-encoded file
+	contents, err := base64.StdEncoding.DecodeString(data)
+	if err != nil {
+		log.Fatalf("decoding base64: %v", err)
+	}
+	return contents
 }

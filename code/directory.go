@@ -11,8 +11,6 @@ import (
 )
 
 const (
-	fontPrefix                 = "fonts"
-	glyphlistFile              = "glyphlist.txt"
 	CompressStreams            = true
 	FallbackGlyph              = "question"
 	FallbackTypewriter         = "courier"
@@ -33,11 +31,11 @@ type fontdata struct {
 }
 
 var FontSourceList = map[string]*fontdata{
-	"times-roman": {"Times-Roman.afm", "", "FR", -1},
-	"times-bold":  {"Times-Bold.afm", "", "FB", -1},
-	"courier":     {"Courier.afm", "", "FT", -1},
-	"lmtt":        {"lmtt10.afm", "lmtt10.pfb", "FT", 69},
-	"lmvtt":       {"lmvtt10.afm", "lmvtt10.pfb", "FT", 69},
+	"times-roman": {Times_Roman_afm, "", "FR", -1},
+	"times-bold":  {Times_Bold_afm, "", "FB", -1},
+	"courier":     {Courier_afm, "", "FT", -1},
+	"lmtt":        {lmtt10_afm, lmtt10_pfb, "FT", 69},
+	"lmvtt":       {lmvtt10_afm, lmvtt10_pfb, "FT", 69},
 }
 
 type RegularExpression struct {

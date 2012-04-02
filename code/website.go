@@ -19,6 +19,7 @@ import (
 var t *template.Template
 var defaultConfig Directory
 var decoder = schema.NewDecoder()
+var jquery = MustDecodeBase64(jquery_js)
 
 func init() {
 	var err error
@@ -28,13 +29,10 @@ func init() {
 	t.Funcs(template.FuncMap{
 		"ifEqual": ifEqual,
 	})
-	template.Must(t.ParseFiles("index.template"))
+	template.Must(t.Parse(indexTemplate))
 
 	// load the default config file
-	var raw []byte
-	if raw, err = ioutil.ReadFile("config.json"); err != nil {
-		log.Fatal("loading default config file: ", err)
-	}
+	var raw = []byte(defaultConfigJSON)
 	if err = json.Unmarshal(raw, &defaultConfig); err != nil {
 		log.Fatal("Unable to parse default config file: ", err)
 	}
@@ -44,7 +42,7 @@ func init() {
 
 	http.HandleFunc("/", index)
 	http.HandleFunc("/submit", submit)
-	http.HandleFunc("/upload", upload)
+	http.HandleFunc("/jquery.js", js)
 }
 
 // if the first arguments match each other, return the last as a string
@@ -88,8 +86,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 	config.AddressRegexps = append(config.AddressRegexps, &RegularExpression{})
 	config.NameRegexps = append(config.NameRegexps, &RegularExpression{})
 
-	tmpl := t.Lookup("index.template")
-	tmpl.Execute(w, config)
+	t.Execute(w, config)
 }
 
 func submit(w http.ResponseWriter, r *http.Request) {
@@ -149,7 +146,7 @@ func submit(w http.ResponseWriter, r *http.Request) {
 	action := r.FormValue("SubmitButton")
 
 	// almost always save the uploaded form data
-	if action != "Delete" {
+	if !strings.HasPrefix(action, "Clear") && !strings.HasPrefix(action, "Import") {
 		if _, err := datastore.Put(c, key, config); err != nil {
 			c.Infof("submit: Saving: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -158,8 +155,8 @@ func submit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// now figure out what to do with it
-	switch action {
-	case "Delete":
+	switch {
+	case strings.HasPrefix(action, "Clear"):
 		if err := datastore.Delete(c, key); err != nil && err != datastore.ErrNoSuchEntity {
 			c.Infof("Delete: deleting the entry: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -167,7 +164,7 @@ func submit(w http.ResponseWriter, r *http.Request) {
 		}
 		http.Redirect(w, r, "/", http.StatusFound)
 
-	case "Download":
+	case strings.HasPrefix(action, "Export"):
 		// convert it into JSON format
 		data, err := json.MarshalIndent(config, "", "    ")
 		if err != nil {
@@ -182,7 +179,48 @@ func submit(w http.ResponseWriter, r *http.Request) {
 			[]string{`attachment; filename="WardDirectorySetup.json"`}
 		w.Write(data)
 
-	case "Generate":
+	case strings.HasPrefix(action, "Import"):
+		// get the uplaoded JSON file
+		file, _, err := r.FormFile("DirectoryConfig")
+		if err != nil {
+			c.Infof("Upload: getting the DirectoryConfig form field: %v", err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		defer file.Close()
+		data, err := ioutil.ReadAll(file)
+		if err != nil {
+			c.Infof("Upload: reading the JSON file data: %v", err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		// unpack it (font will not be used)
+		config := defaultConfig.Copy()
+		if err = json.Unmarshal(data, config); err != nil {
+			c.Infof("Upload: unable to parse uploaded file: %v", err)
+			http.Error(w, "Unable to parse uploaded file: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		config.ComputeImplicitFields()
+
+		// delete the old one (if any)
+		if err := datastore.Delete(c, key); err != nil && err != datastore.ErrNoSuchEntity {
+			c.Infof("Upload: deleting the old entry: %v", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// store the new one
+		config.ToDatastore()
+		if _, err := datastore.Put(c, key, config); err != nil {
+			c.Infof("Upload: saving the new entry: %v", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, "/", http.StatusFound)
+
+	case action == "Generate":
 		// get the uplaoded CSV data
 		file, _, err := r.FormFile("MembershipData")
 		if err != nil {
@@ -259,52 +297,14 @@ func submit(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func upload(w http.ResponseWriter, r *http.Request) {
+func js(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 	u := user.Current(c)
 	if u == nil {
 		http.Error(w, "Must be logged in", http.StatusUnauthorized)
 		return
 	}
-	key := datastore.NewKey(c, "Config", u.Email, 0, nil)
 
-	// get the uplaoded JSON file
-	file, _, err := r.FormFile("DirectoryConfig")
-	if err != nil {
-		c.Infof("Upload: getting the DirectoryConfig form field: %v", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	defer file.Close()
-	data, err := ioutil.ReadAll(file)
-	if err != nil {
-		c.Infof("Upload: reading the JSON file data: %v", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	// unpack it (font will not be used)
-	config := defaultConfig.Copy()
-	if err = json.Unmarshal(data, config); err != nil {
-		c.Infof("Upload: unable to parse uploaded file: %v", err)
-		http.Error(w, "Unable to parse uploaded file: "+err.Error(), http.StatusBadRequest)
-		return
-	}
-	config.ComputeImplicitFields()
-
-	// delete the old one (if any)
-	if err := datastore.Delete(c, key); err != nil && err != datastore.ErrNoSuchEntity {
-		c.Infof("Upload: deleting the old entry: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// store the new one
-	config.ToDatastore()
-	if _, err := datastore.Put(c, key, config); err != nil {
-		c.Infof("Upload: saving the new entry: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	http.Redirect(w, r, "/", http.StatusFound)
+	w.Header()["Content-Type"] = []string{"application/javascript"}
+	w.Write(jquery)
 }

@@ -1,4 +1,6 @@
-{
+package main
+
+var defaultConfigJSON = `{
     "Title": "Your Ward Name Goes Here",
     "Disclaimer": "For Church Use Only",
     "DateFormat": "January 2, 2006",
@@ -37,3 +39,4 @@
     "AddressRegexps": null,
     "NameRegexps": null
 }
+`

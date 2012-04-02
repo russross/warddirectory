@@ -1,12 +1,207 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+package main
+
+var indexTemplate = `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 
 <html>
 <head>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
 <title>Ward Directory Generator</title>
-<link href="/site.css" type="text/css" rel="stylesheet" title="site">
-<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.18/jquery-ui.min.js"></script>
+<style type="text/css">
+  body {
+    font-family: Georgia,Verdana,Sans-serif;
+    font-size: 120%;
+    background: darkblue;
+    margin: 5px;
+  }
+
+  h1, h2 {
+    font-weight: bold;
+    margin-top: 1.25em;
+  }
+  fieldset {
+    margin-top: 1em;
+  }
+  fieldset.section > legend {
+    cursor: pointer;
+  }
+  legend {
+    font-weight: bold;
+    font-size: 150%;
+  }
+  .regexplist li {
+    list-style-type: none;
+  }
+  ul.regexplist {
+    padding-left: 1em;
+  }
+  .regexplist label {
+    padding-left: 0;
+  }
+  .regexplist fieldset, .regexplist fieldset label {
+    cursor: pointer;
+  }
+  .regexplist fieldset {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  h1:first-child { margin-top: 5px; }
+  p:first-child { margin-top: 5px; }
+
+  div#header {
+    margin-bottom: 4px;
+  }
+
+  div#header h1 {
+    font-size: 300%;
+    margin-bottom: 0;
+  }
+
+  #header, #maincolumn {
+    width: 960px;
+    margin: 0 auto;
+    padding: 1em;
+    background: white;
+    border: 2px solid black;
+  }
+
+  label {
+    width: 35%;
+    float: left;
+    padding-left: 2em;
+    font-weight: bold;
+  }
+
+  input[type=text] {
+    width: 60%;
+  }
+
+  hr {
+    margin-top: 2em;
+  }
+</style>
+<script type="text/javascript" src="/jquery.js"></script>
+<script type="text/javascript">
+jQuery(function ($) {
+    $('fieldset.section > legend').click(function () {
+        $(this).siblings().toggle();
+    }).click();
+    $('#units').change(function() {
+        var points_per = Number($('#units').val());
+        $('.measurement').each(function() {
+            var id = this.id.substr(5);
+            var value = Number($('#' + id).val()) / points_per;
+            this.value = value;
+        });
+    }).change();
+    $('.measurement').change(function() {
+        var points_per = Number($('#units').val());
+        var id = this.id.substr(5);
+        var value = Number(this.value) * points_per;
+        $('#' + id).val(value).change();
+    });
+    $('#generatebutton').click(function() {
+        // make sure they selected a file before trying to upload
+        if ($('#MembershipData').val() == '') {
+            alert('Please select a .csv file before clicking the “Generate” button');
+            return false;
+        }
+    });
+    $('#importbutton').click(function() {
+        // make sure they selected a file before trying to upload
+        if ($('#DirectoryConfig').val() == '') {
+            alert('Please select a .json file before clicking the “Import settings” button');
+            return false;
+        }
+    });
+    $('#deletebutton').click(function() {
+        // confirm before deleting
+        if (!confirm("Are you sure you want to clear all of your settings?")) {
+            return false;
+        }
+    });
+    $('.save').live('change', function () {
+        // submit using ajax to avoid reseting the csv file field
+        var data = $('#submitform').serialize();
+        data['SubmitButton'] = 'Save';
+        $.ajax({
+            type: 'POST',
+            url: '/submit',
+            data: data,
+            success: function () { console.log('Saved'); },
+            error: function (err, msg, http) {
+                alert('Oops! Save did not work! [' + msg + ', ' + http + ']');
+            }
+        });
+        return false;
+    });
+    $('.regexplist').sortable({
+        stop: function() {
+		    var last;
+            $(this).find('fieldset').each(function(i, elt) {
+                var $elt = $(elt);
+                $elt.find('label').each(function () {
+                    this.htmlFor = this.htmlFor.replace(/\.\d+\./, '.' + i + '.');
+                });
+                $elt.find('input').each(function () {
+					last = this;
+                    this.id = this.id.replace(/\.\d+\./, '.' + i + '.');
+                    this.name = this.name.replace(/\.\d+\./, '.' + i + '.');
+                });
+            });
+			$(last).change();
+        }
+    });
+    $('#morephone').click(function () {
+        var n = $('#nextphone').val();
+        $('#nextphone').val(Number(n)+1);
+        var expr = 'PhoneRegexps.' + n + '.Expression';
+        var repl = 'PhoneRegexps.' + n + '.Replacement';
+        var s = '<fieldset>\n<legend>Phone substitution</legend>\n<p>\n';
+        s += '  <label for="' + expr + '">Search for</label>\n';
+        s += '  <input type="text" class="save" id="' + expr + '" name="' + expr + '" value="">\n';
+        s += '</p>\n';
+        s += '<p>\n';
+        s += '  <label for="' + repl + '">Replace with</label>\n';
+        s += '  <input type="text" class="save" id="' + repl + '" name="' + repl + '" value="">\n';
+        s += '</p>\n</fieldset>\n';
+        $('#phoneregexplist').append(s);
+        return false;
+    });
+    $('#moreaddress').click(function () {
+        var n = $('#nextaddress').val();
+        $('#nextaddress').val(Number(n)+1);
+        var expr = 'AddressRegexps.' + n + '.Expression';
+        var repl = 'AddressRegexps.' + n + '.Replacement';
+        var s = '<fieldset>\n<legend>Address substitution</legend>\n<p>\n';
+        s += '  <label for="' + expr + '">Search for</label>\n';
+        s += '  <input type="text" class="save" id="' + expr + '" name="' + expr + '" value="">\n';
+        s += '</p>\n';
+        s += '<p>\n';
+        s += '  <label for="' + repl + '">Replace with</label>\n';
+        s += '  <input type="text" class="save" id="' + repl + '" name="' + repl + '" value="">\n';
+        s += '</p>\n</fieldset>\n';
+        $('#addressregexplist').append(s);
+        return false;
+    });
+    $('#morename').click(function () {
+        var n = $('#nextname').val();
+        $('#nextname').val(Number(n)+1);
+        var expr = 'NameRegexps.' + n + '.Expression';
+        var repl = 'NameRegexps.' + n + '.Replacement';
+        var s = '<fieldset>\n<legend>Name substitution</legend>\n<p>\n';
+        s += '  <label for="' + expr + '">Search for</label>\n';
+        s += '  <input type="text" class="save" id="' + expr + '" name="' + expr + '" value="">\n';
+        s += '</p>\n';
+        s += '<p>\n';
+        s += '  <label for="' + repl + '">Replace with</label>\n';
+        s += '  <input type="text" class="save" id="' + repl + '" name="' + repl + '" value="">\n';
+        s += '</p>\n</fieldset>\n';
+        $('#nameregexplist').append(s);
+        return false;
+    });
+});
+</script>
 </head>
 
 <body>
@@ -85,7 +280,7 @@ ward for the top of the page:</p>
 
   <p>
     <label for="Title">Ward name</label>
-    <input type="text" id="Title" name="Title" value="{{.Title | html}}">
+    <input type="text" class="save" id="Title" name="Title" value="{{.Title | html}}">
   </p>
 
 <p>Your settings are automatically saved when you generate a new
@@ -99,7 +294,7 @@ Write January 2, 2006 in the format that you prefer. Examples:
 
   <p>
     <label for="DateFormat">Date format</label>
-    <input type="text" id="DateFormat" name="DateFormat" value="{{.DateFormat | html}}">
+    <input type="text" class="save" id="DateFormat" name="DateFormat" value="{{.DateFormat | html}}">
   </p>
 
 <p>This message is placed on the right hand side of the header. It
@@ -107,7 +302,7 @@ defaults to “For Church Use Only”.</p>
 
   <p>
     <label for="Disclaimer">Disclaimer</label>
-    <input type="text" id="Disclaimer" name="Disclaimer" value="{{.Disclaimer | html}}">
+    <input type="text" class="save" id="Disclaimer" name="Disclaimer" value="{{.Disclaimer | html}}">
   </p>
 </fieldset>
 
@@ -119,15 +314,15 @@ with corrections. Leave all three blank and the footer will be omitted.</p>
 
   <p>
     <label for="FooterLeft">Left-flushed text</label>
-	<input type="text" id="FooterLeft" name="FooterLeft" value="{{.FooterLeft | html}}">
+	<input type="text" class="save" id="FooterLeft" name="FooterLeft" value="{{.FooterLeft | html}}">
   </p>
   <p>
     <label for="FooterCenter">Centered text</label>
-	<input type="text" id="FooterCenter" name="FooterCenter" value="{{.FooterCenter | html}}">
+	<input type="text" class="save" id="FooterCenter" name="FooterCenter" value="{{.FooterCenter | html}}">
   </p>
   <p>
     <label for="FooterRight">Right-flushed text</label>
-	<input type="text" id="FooterRight" name="FooterRight" value="{{.FooterRight | html}}">
+	<input type="text" class="save" id="FooterRight" name="FooterRight" value="{{.FooterRight | html}}">
   </p>
 
 <p>The footer is placed in the bottom margin, so you may need to adjust your
@@ -151,13 +346,13 @@ the dimensions are 210&times;297&nbsp;mm.</p>
   <p>
     <label for="user_PageWidth">Page width</label>
     <input type="text" class="measurement" id="user_PageWidth" name="user_PageWidth" value="">
-    <input type="hidden" id="PageWidth" name="PageWidth" value="{{.PageWidth | html}}">
+    <input type="hidden" class="save" id="PageWidth" name="PageWidth" value="{{.PageWidth | html}}">
   </p>
 
   <p>
     <label for="user_PageHeight">Page height</label>
     <input type="text" class="measurement" id="user_PageHeight" name="user_PageHeight" value="">
-    <input type="hidden" id="PageHeight" name="PageHeight" value="{{.PageHeight | html}}">
+    <input type="hidden" class="save" id="PageHeight" name="PageHeight" value="{{.PageHeight | html}}">
   </p>
 
 <p>The default top margin is 1&nbsp;inch. The ward name and other
@@ -167,7 +362,7 @@ space for it.</p>
   <p>
     <label for="user_TopMargin">Top margin</label>
     <input type="text" class="measurement" id="user_TopMargin" name="user_TopMargin" value="">
-    <input type="hidden" id="TopMargin" name="TopMargin" value="{{.TopMargin | html}}">
+    <input type="hidden" class="save" id="TopMargin" name="TopMargin" value="{{.TopMargin | html}}">
   </p>
 
 <p>The default bottom margin is
@@ -176,7 +371,7 @@ space for it.</p>
   <p>
     <label for="user_BottomMargin">Bottom margin</label>
     <input type="text" class="measurement" id="user_BottomMargin" name="user_BottomMargin" value="">
-    <input type="hidden" id="BottomMargin" name="BottomMargin" value="{{.BottomMargin | html}}">
+    <input type="hidden" class="save" id="BottomMargin" name="BottomMargin" value="{{.BottomMargin | html}}">
   </p>
 
 <p>The left and right margins default to
@@ -185,12 +380,12 @@ space for it.</p>
   <p>
     <label for="user_LeftMargin">Left margin</label>
     <input type="text" class="measurement" id="user_LeftMargin" name="user_LeftMargin" value="">
-    <input type="hidden" id="LeftMargin" name="LeftMargin" value="{{.LeftMargin | html}}">
+    <input type="hidden" class="save" id="LeftMargin" name="LeftMargin" value="{{.LeftMargin | html}}">
   </p>
   <p>
     <label for="user_RightMargin">Right margin</label>
     <input type="text" class="measurement" id="user_RightMargin" name="user_RightMargin" value="">
-    <input type="hidden" id="RightMargin" name="RightMargin" value="{{.RightMargin | html}}">
+    <input type="hidden" class="save" id="RightMargin" name="RightMargin" value="{{.RightMargin | html}}">
   </p>
 
 <p>The number of pages defaults to 2. This lets you put the whole
@@ -198,7 +393,7 @@ directory on a single double-sided sheet of paper.</p>
 
   <p>
     <label for="Pages">Pages</label>
-    <input type="text" id="Pages" name="Pages" value="{{.Pages | html}}">
+    <input type="text" class="save" id="Pages" name="Pages" value="{{.Pages | html}}">
   </p>
 
 <p>The number of columns per page defaults to 2. If you have a
@@ -208,7 +403,7 @@ printing on a single page, 3 or more might look better.</p>
 
   <p>
     <label for="ColumnsPerPage">Columns per page</label>
-    <input type="text" id="ColumnsPerPage" name="ColumnsPerPage" value="{{.ColumnsPerPage | html}}">
+    <input type="text" class="save" id="ColumnsPerPage" name="ColumnsPerPage" value="{{.ColumnsPerPage | html}}">
   </p>
 
 <p>The space between columns defaults to 10 points, i.e.,
@@ -217,7 +412,7 @@ printing on a single page, 3 or more might look better.</p>
   <p>
     <label for="user_ColumnSep">Space between columns</label>
     <input type="text" class="measurement" id="user_ColumnSep" name="user_ColumnSep" value="">
-    <input type="hidden" id="ColumnSep" name="ColumnSep" value="{{.ColumnSep | html}}">
+    <input type="hidden" class="save" id="ColumnSep" name="ColumnSep" value="{{.ColumnSep | html}}">
   </p>
 
 <p>Email addresses are set in a typewriter font. The default of
@@ -232,10 +427,10 @@ there.</p>
 
   <p>
     <label for="EmailFont">Email address font</label>
-    <select id="EmailFont" name="EmailFont">
-      <option value="lmvtt"{{ifEqual .EmailFont "lmvtt" ` selected="selected"`}}>Latin Modern (proportional)</option>
-      <option value="lmtt"{{ifEqual .EmailFont "lmtt" ` selected="selected"`}}>Latin Modern (fixed width)</option>
-      <option value="courier"{{ifEqual .EmailFont "courier"` selected="selected"`}}>Courier (fixed width)</option>
+    <select class="save" id="EmailFont" name="EmailFont">
+      <option value="lmvtt"{{ifEqual .EmailFont "lmvtt" " selected=\"selected\""}}>Latin Modern (proportional)</option>
+      <option value="lmtt"{{ifEqual .EmailFont "lmtt" " selected=\"selected\""}}>Latin Modern (fixed width)</option>
+      <option value="courier"{{ifEqual .EmailFont "courier" " selected=\"selected\""}}>Courier (fixed width)</option>
     </select>
   </p>
 </fieldset>
@@ -251,27 +446,27 @@ email addresses will be omitted.</p>
 
   <p>
     <label for="FullFamily">All family members</label>
-    <input type="checkbox" id="FullFamily" name="FullFamily" value="true"{{if .FullFamily}} checked="yes"{{end}}>
+    <input type="checkbox" class="save" id="FullFamily" name="FullFamily" value="true"{{if .FullFamily}} checked="yes"{{end}}>
   </p>
   <p>
     <label for="FamilyPhone">Family phone number</label>
-    <input type="checkbox" id="FamilyPhone" name="FamilyPhone" value="true"{{if .FamilyPhone}} checked="yes"{{end}}>
+    <input type="checkbox" class="save" id="FamilyPhone" name="FamilyPhone" value="true"{{if .FamilyPhone}} checked="yes"{{end}}>
   </p>
   <p>
     <label for="FamilyEmail">Family email address</label>
-    <input type="checkbox" id="FamilyEmail" name="FamilyEmail" value="true"{{if .FamilyEmail}} checked="yes"{{end}}>
+    <input type="checkbox" class="save" id="FamilyEmail" name="FamilyEmail" value="true"{{if .FamilyEmail}} checked="yes"{{end}}>
   </p>
   <p>
     <label for="FamilyAddress">Family address</label>
-    <input type="checkbox" id="FamilyAddress" name="FamilyAddress" value="true"{{if .FamilyAddress}} checked="yes"{{end}}>
+    <input type="checkbox" class="save" id="FamilyAddress" name="FamilyAddress" value="true"{{if .FamilyAddress}} checked="yes"{{end}}>
   </p>
   <p>
     <label for="PersonalPhones">Individual phone numbers</label>
-    <input type="checkbox" id="PersonalPhones" name="PersonalPhones" value="true"{{if .PersonalPhones}} checked="yes"{{end}}>
+    <input type="checkbox" class="save" id="PersonalPhones" name="PersonalPhones" value="true"{{if .PersonalPhones}} checked="yes"{{end}}>
   </p>
   <p>
     <label for="PersonalEmails">Individual email addresses</label>
-    <input type="checkbox" id="PersonalEmails" name="PersonalEmails" value="true"{{if .PersonalEmails}} checked="yes"{{end}}>
+    <input type="checkbox" class="save" id="PersonalEmails" name="PersonalEmails" value="true"{{if .PersonalEmails}} checked="yes"{{end}}>
   </p>
 </fieldset>
 
@@ -323,11 +518,11 @@ for regular expression tutorials.</p>
   <legend>Phone substitution</legend>
   <p>
     <label for="PhoneRegexps.{{$i}}.Expression">Search for</label>
-    <input type="text" id="PhoneRegexps.{{$i}}.Expression" name="PhoneRegexps.{{$i}}.Expression" value="{{$elt.Expression | html}}">
+    <input type="text" class="save" id="PhoneRegexps.{{$i}}.Expression" name="PhoneRegexps.{{$i}}.Expression" value="{{$elt.Expression | html}}">
   </p>
   <p>
     <label for="PhoneRegexps.{{$i}}.Replacement">Replace with</label>
-    <input type="text" id="PhoneRegexps.{{$i}}.Replacement" name="PhoneRegexps.{{$i}}.Replacement" value="{{$elt.Replacement | html}}">
+    <input type="text" class="save" id="PhoneRegexps.{{$i}}.Replacement" name="PhoneRegexps.{{$i}}.Replacement" value="{{$elt.Replacement | html}}">
  </p>
   </fieldset>
 </li>{{end}}
@@ -385,11 +580,11 @@ the help in improving the membership records.</p>
   <legend>Address substitution</legend>
   <p>
     <label for="AddressRegexps.{{$i}}.Expression">Search for</label>
-    <input type="text" id="AddressRegexps.{{$i}}.Expression" name="AddressRegexps.{{$i}}.Expression" value="{{$elt.Expression | html}}">
+    <input type="text" class="save" id="AddressRegexps.{{$i}}.Expression" name="AddressRegexps.{{$i}}.Expression" value="{{$elt.Expression | html}}">
   </p>
   <p>
     <label for="AddressRegexps.{{$i}}.Replacement">Replace with</label>
-    <input type="text" id="AddressRegexps.{{$i}}.Replacement" name="AddressRegexps.{{$i}}.Replacement" value="{{$elt.Replacement | html}}">
+    <input type="text" class="save" id="AddressRegexps.{{$i}}.Replacement" name="AddressRegexps.{{$i}}.Replacement" value="{{$elt.Replacement | html}}">
   </p>
   </fieldset>
 </li>{{end}}
@@ -425,11 +620,11 @@ for the help in improving the membership records.</p>
   <legend>Name substitution</legend>
   <p>
     <label for="NameRegexps.{{$i}}.Expression">Search for</label>
-    <input type="text" id="NameRegexps.{{$i}}.Expression" name="NameRegexps.{{$i}}.Expression" value="{{$elt.Expression | html}}">
+    <input type="text" class="save" id="NameRegexps.{{$i}}.Expression" name="NameRegexps.{{$i}}.Expression" value="{{$elt.Expression | html}}">
   </p>
   <p>
     <label for="NameRegexps.{{$i}}.Replacement">Replace with</label>
-    <input type="text" id="NameRegexps.{{$i}}.Replacement" name="NameRegexps.{{$i}}.Replacement" value="{{$elt.Replacement | html}}">
+    <input type="text" class="save" id="NameRegexps.{{$i}}.Replacement" name="NameRegexps.{{$i}}.Replacement" value="{{$elt.Replacement | html}}">
   </p>
   </fieldset>
 </li>{{end}}
@@ -439,39 +634,41 @@ Drag and drop to change the order. Blank pairs are ignored.</p>
 <input type="hidden" id="nextname" value="{{len .NameRegexps}}">
 </fieldset>
 
-<p>Be sure to save the changes you make. They will be there next
-time you come to print an updated directory, so you can just
+<h1>Import/export settings</h1>
+
+<p>Your settings are saved automatically, and they will be there
+next time you come to print an updated directory. You can just
 download the latest listing from lds.org and generate a new
-directory. They will be saved under your account, and will
-automatically be loaded the next time you visit. Clicking the
-“Generate” button also saves your changes.</p>
+directory.</p>
 
-<p>If you would rather not have your setup saved, you can click on
-the “Delete” button below to reset everything. This action is
-permanent, so use it with caution.</p>
-
-<p>If you would like to save your settings on your own computer,
-click on the “Download” button to download a .json file with all of
-your settings in it. You can upload it later yourself, or you can
-give the file to someone else to upload using their own account.</p>
+<p>If you would rather not have your settings saved, you can click
+on the “Clear settings” button below to reset everything. This
+action is permanent, so use it with caution.</p>
 
   <p>
-    <input type="submit" id="savebutton" name="SubmitButton" value="Save">
-    <input type="submit" name="SubmitButton" value="Download">
-    <input type="submit" id="deletebutton" name="SubmitButton" value="Delete">
+    <input type="submit" id="deletebutton" name="SubmitButton" value="Clear settings">
   </p>
-</form>
 
-<h1>Upload a configuration</h1>
+<p>If you would like to export your settings as a file, click on the
+“Export settings” button to download a .json file with all of your
+settings in it. You can import it later yourself, or you can give
+the file to someone else to upload onto their own machine.
+Important note: this only saves your settings, it does not save any
+directory data.</p>
+
+  <p>
+    <input type="submit" name="SubmitButton" value="Export settings">
+  </p>
 
 <p>If you have downloaded your settings using the button above, you
 can upload them again here. Click the first button, find the file,
-then click “Upload” to upload and save your settings under your
-account. This will overwrite any other settings you have saved.</p>
+then click “Import settings” to upload and save your settings file.
+This will overwrite any other settings you have saved.</p>
 
-<form method="post" action="/upload" enctype="multipart/form-data">
-  <input type="file" id="DirectoryConfig" name="DirectoryConfig">
-  <input type="submit" id="uploadbutton" value="Upload">
+  <p>
+    <input type="file" id="DirectoryConfig" name="DirectoryConfig">
+    <input type="submit" id="importbutton" name="SubmitButton" value="Import settings">
+  </p>
 </form>
 
 <hr>
@@ -487,125 +684,6 @@ document.write(
         '9'+';'+'<'+'/'+'a'+'>');
 </script></p>
 </div>
-
-<script type="text/javascript">
-jQuery(function ($) {
-    $('fieldset.section > legend').click(function () {
-        $(this).siblings().toggle();
-    }).click();
-    $('#units').change(function() {
-        var points_per = Number($('#units').val());
-        $('.measurement').each(function() {
-            var id = this.id.substr(5);
-            var value = Number($('#' + id).val()) / points_per;
-            this.value = value;
-        });
-    }).change();
-    $('.measurement').change(function() {
-        var points_per = Number($('#units').val());
-        var id = this.id.substr(5);
-        var value = Number(this.value) * points_per;
-        $('#' + id).val(value);
-    });
-    $('#generatebutton').click(function() {
-        // make sure they selected a file before trying to upload
-        if ($('#MembershipData').val() == '') {
-            alert('Please select a .csv file before clicking the “Generate” button');
-            return false;
-        }
-    });
-    $('#uploadbutton').click(function() {
-        // make sure they selected a file before trying to upload
-        if ($('#DirectoryConfig').val() == '') {
-            alert('Please select a .json file before clicking the “Upload” button');
-            return false;
-        }
-    });
-    $('#deletebutton').click(function() {
-        // confirm before deleting
-        if (!confirm("Are you sure you want to delete your setup?")) {
-            return false;
-        }
-    });
-    $('#savebutton').click(function () {
-        // submit using ajax to avoid reseting the csv file field
-        var data = $('#submitform').serialize();
-        data['SubmitButton'] = 'Save';
-        $.ajax({
-            type: 'POST',
-            url: '/submit',
-            data: data,
-            success: function () { window.scrollTo(0, 0); },
-            error: function (err, msg, http) {
-                alert('Oops! Save did not work! [' + msg + ', ' + http + ']');
-            }
-        });
-        return false;
-    });
-    $('.regexplist').sortable({
-        stop: function() {
-            $(this).find('fieldset').each(function(i, elt) {
-                var $elt = $(elt);
-                $elt.find('label').each(function () {
-                    this.htmlFor = this.htmlFor.replace(/\.\d+\./, '.' + i + '.');
-                });
-                $elt.find('input').each(function () {
-                    this.id = this.id.replace(/\.\d+\./, '.' + i + '.');
-                    this.name = this.name.replace(/\.\d+\./, '.' + i + '.');
-                });
-            });
-        }
-    });
-    $('#morephone').click(function () {
-        var n = $('#nextphone').val();
-        $('#nextphone').val(Number(n)+1);
-        var expr = 'PhoneRegexps.' + n + '.Expression';
-        var repl = 'PhoneRegexps.' + n + '.Replacement';
-        var s = '<fieldset>\n<legend>Phone substitution</legend>\n<p>\n';
-        s += '  <label for="' + expr + '">Search for</label>\n';
-        s += '  <input type="text" id="' + expr + '" name="' + expr + '" value="">\n';
-        s += '</p>\n';
-        s += '<p>\n';
-        s += '  <label for="' + repl + '">Replace with</label>\n';
-        s += '  <input type="text" id="' + repl + '" name="' + repl + '" value="">\n';
-        s += '</p>\n</fieldset>\n';
-        $('#phoneregexplist').append(s);
-        return false;
-    });
-    $('#moreaddress').click(function () {
-        var n = $('#nextaddress').val();
-        $('#nextaddress').val(Number(n)+1);
-        var expr = 'AddressRegexps.' + n + '.Expression';
-        var repl = 'AddressRegexps.' + n + '.Replacement';
-        var s = '<fieldset>\n<legend>Address substitution</legend>\n<p>\n';
-        s += '  <label for="' + expr + '">Search for</label>\n';
-        s += '  <input type="text" id="' + expr + '" name="' + expr + '" value="">\n';
-        s += '</p>\n';
-        s += '<p>\n';
-        s += '  <label for="' + repl + '">Replace with</label>\n';
-        s += '  <input type="text" id="' + repl + '" name="' + repl + '" value="">\n';
-        s += '</p>\n</fieldset>\n';
-        $('#addressregexplist').append(s);
-        return false;
-    });
-    $('#morename').click(function () {
-        var n = $('#nextname').val();
-        $('#nextname').val(Number(n)+1);
-        var expr = 'NameRegexps.' + n + '.Expression';
-        var repl = 'NameRegexps.' + n + '.Replacement';
-        var s = '<fieldset>\n<legend>Name substitution</legend>\n<p>\n';
-        s += '  <label for="' + expr + '">Search for</label>\n';
-        s += '  <input type="text" id="' + expr + '" name="' + expr + '" value="">\n';
-        s += '</p>\n';
-        s += '<p>\n';
-        s += '  <label for="' + repl + '">Replace with</label>\n';
-        s += '  <input type="text" id="' + repl + '" name="' + repl + '" value="">\n';
-        s += '</p>\n</fieldset>\n';
-        $('#nameregexplist').append(s);
-        return false;
-    });
-});
-</script>
 </body>
 </html>
-
+`

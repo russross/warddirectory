@@ -2,23 +2,17 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"strconv"
 	"strings"
 )
 
 var windows1252mappings map[rune]string
 
-func parseGlyphList(known map[string]bool, universal map[string]bool, filename string) (mapping map[rune]string, err error) {
-	contents, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return
-	}
-
+func parseGlyphList(known map[string]bool, universal map[string]bool, file string) (mapping map[rune]string, err error) {
 	mapping = make(map[rune]string)
 
 	// process one line at a time
-	for _, line := range strings.Split(string(contents), "\n") {
+	for _, line := range strings.Split(file, "\n") {
 		// skip comment/blank lines
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue

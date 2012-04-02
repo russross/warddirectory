@@ -4,11 +4,6 @@ runtime: go
 api_version: go1
 
 handlers:
-- url: /site.css
-  static_files: site.css
-  upload: site.css
-  secure: always
-
 - url: /favicon.ico
   static_files: favicon.ico
   upload: favicon.ico
@@ -17,7 +12,7 @@ handlers:
   static_files: robots.txt
   upload: robots.txt
 
-- url: /(submit|upload)?
+- url: /(submit|upload|jquery\.js)?
   login: required
   secure: always
   script: _go_app
