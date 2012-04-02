@@ -20,6 +20,7 @@ var t *template.Template
 var defaultConfig Directory
 var decoder = schema.NewDecoder()
 var jquery = MustDecodeBase64(jquery_js)
+var favicon = MustDecodeBase64(favicon_ico)
 
 func init() {
 	var err error
@@ -43,6 +44,7 @@ func init() {
 	http.HandleFunc("/", index)
 	http.HandleFunc("/submit", submit)
 	http.HandleFunc("/jquery.js", js)
+	http.HandleFunc("/favicon.ico", ico)
 }
 
 // if the first arguments match each other, return the last as a string
@@ -298,13 +300,11 @@ func submit(w http.ResponseWriter, r *http.Request) {
 }
 
 func js(w http.ResponseWriter, r *http.Request) {
-	c := appengine.NewContext(r)
-	u := user.Current(c)
-	if u == nil {
-		http.Error(w, "Must be logged in", http.StatusUnauthorized)
-		return
-	}
-
 	w.Header()["Content-Type"] = []string{"application/javascript"}
 	w.Write(jquery)
+}
+
+func ico(w http.ResponseWriter, r *http.Request) {
+	w.Header()["Content-Type"] = []string{"image/x-icon"}
+	w.Write(favicon)
 }
