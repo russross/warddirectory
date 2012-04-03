@@ -261,6 +261,9 @@ sacrament meeting.</p>
 one side first, then turn the paper over and print the other
 side.</p>
 
+<p>To shut down the generator service, click this button:
+<input type="submit" id="shutdownbutton" name="SubmitButton" value="Shutdown"></p>
+
 <h1>Customize the output</h1>
 
 <p>Click on any of these section headers to see the ways that you
