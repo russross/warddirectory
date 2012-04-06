@@ -5,6 +5,7 @@
 package main
 
 import (
+	"github.com/russross/warddirectory/data"
 	"regexp"
 	"strings"
 	"time"
@@ -31,11 +32,11 @@ type fontdata struct {
 }
 
 var FontSourceList = map[string]*fontdata{
-	"times-roman": {Times_Roman_afm, "", "FR", -1},
-	"times-bold":  {Times_Bold_afm, "", "FB", -1},
-	"courier":     {Courier_afm, "", "FT", -1},
-	"lmtt":        {lmtt10_afm, lmtt10_pfb, "FT", 69},
-	"lmvtt":       {lmvtt10_afm, lmvtt10_pfb, "FT", 69},
+	"times-roman": {data.Times_Roman_afm, "", "FR", -1},
+	"times-bold":  {data.Times_Bold_afm, "", "FB", -1},
+	"courier":     {data.Courier_afm, "", "FT", -1},
+	"lmtt":        {data.Lmtt10_afm, data.Lmtt10_pfb, "FT", 69},
+	"lmvtt":       {data.Lmvtt10_afm, data.Lmvtt10_pfb, "FT", 69},
 }
 
 type RegularExpression struct {

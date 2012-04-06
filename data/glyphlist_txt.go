@@ -1,6 +1,6 @@
-package main
+package data
 
-var glyphlist_txt = `
+var Glyphlist_txt = `
 IyAjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
 IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIwojIENvcHlyaWdodCAoYykgMTk5NywxOTk4LDIw
 MDIsMjAwNyBBZG9iZSBTeXN0ZW1zIEluY29ycG9yYXRlZAojIAojIFBlcm1pc3Npb24gaXMgaGVy

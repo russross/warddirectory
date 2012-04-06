@@ -1,6 +1,6 @@
-package main
+package data
 
-var jquery_js = `
+var Jquery_js = `
 LyohIGpRdWVyeSB2MS43LjEganF1ZXJ5LmNvbSB8IGpxdWVyeS5vcmcvbGljZW5zZSAqLwooZnVu
 Y3Rpb24oYSxiKXtmdW5jdGlvbiBjeShhKXtyZXR1cm4gZi5pc1dpbmRvdyhhKT9hOmEubm9kZVR5
 cGU9PT05P2EuZGVmYXVsdFZpZXd8fGEucGFyZW50V2luZG93OiExfWZ1bmN0aW9uIGN2KGEpe2lm

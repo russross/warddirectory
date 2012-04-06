@@ -1,6 +1,6 @@
-package main
+package data
 
-var lmtt10_pfb = `
+var Lmtt10_pfb = `
 gAEwFgAAJSFQUy1BZG9iZUZvbnQtMS4wOiBMTU1vbm8xMC1SZWd1bGFyIDIuMDA0CiUlQ3JlYXRp
 b25EYXRlOiA3dGggT2N0b2JlciAyMDA5CiUgR2VuZXJhdGVkIGJ5IE1ldGFUeXBlMSAoYSBNZXRh
 UG9zdC1iYXNlZCBlbmdpbmUpCiUgQ29weXJpZ2h0IDIwMDMtLTIwMDkgYnkgQi4gSmFja293c2tp

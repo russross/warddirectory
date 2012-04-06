@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"code.google.com/p/gorilla/schema"
 	"encoding/json"
+	"github.com/russross/warddirectory/data"
 	"io"
 	"io/ioutil"
 	"log"
@@ -18,8 +19,8 @@ import (
 var t *template.Template
 var defaultConfig Directory
 var decoder = schema.NewDecoder()
-var jquery = MustDecodeBase64(jquery_js)
-var favicon = MustDecodeBase64(favicon_ico)
+var jquery = MustDecodeBase64(data.Jquery_js)
+var favicon = MustDecodeBase64(data.Favicon_ico)
 
 func init() {
 	var err error
@@ -32,7 +33,7 @@ func init() {
 	template.Must(t.Parse(indexTemplate))
 
 	// load the default config file
-	var raw = []byte(defaultConfigJSON)
+	var raw = []byte(data.DefaultConfigJSON)
 	if err = json.Unmarshal(raw, &defaultConfig); err != nil {
 		log.Fatal("Unable to parse default config file: ", err)
 	}

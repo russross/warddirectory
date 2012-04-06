@@ -11,6 +11,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/russross/warddirectory/data"
 	"log"
 	"strings"
 )
@@ -78,7 +79,7 @@ func init() {
 	}
 
 	// get the complete list of glyphs we know about
-	if unicodeToGlyph, err = GlyphMapping(FontList, string(MustDecodeBase64(glyphlist_txt))); err != nil {
+	if unicodeToGlyph, err = GlyphMapping(FontList, string(MustDecodeBase64(data.Glyphlist_txt))); err != nil {
 		log.Fatal("loading glyph metrics: ", err)
 	}
 }

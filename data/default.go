@@ -1,6 +1,6 @@
-package main
+package data
 
-var defaultConfigJSON = `{
+var DefaultConfigJSON = `{
     "Title": "Your Ward Name Goes Here",
     "Disclaimer": "For Church Use Only",
     "DateFormat": "January 2, 2006",

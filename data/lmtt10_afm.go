@@ -1,6 +1,6 @@
-package main
+package data
 
-var lmtt10_afm = `
+var Lmtt10_afm = `
 U3RhcnRGb250TWV0cmljcyAyLjAKQ29tbWVudCBHZW5lcmF0ZWQgYnkgTWV0YVR5cGUxIChhIE1l
 dGFQb3N0LWJhc2VkIGVuZ2luZSkKQ29tbWVudCBDcmVhdGlvbiBEYXRlOiA3dGggT2N0b2JlciAy
 MDA5Ck5vdGljZSBDb3B5cmlnaHQgMjAwMy0tMjAwOSBieSBCLiBKYWNrb3dza2kgYW5kIEouTS4g

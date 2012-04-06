@@ -1,4 +1,4 @@
-package main
+package data
 
 var Times_Bold_afm = `
 U3RhcnRGb250TWV0cmljcyA0LjENCkNvbW1lbnQgQ29weXJpZ2h0IChjKSAxOTg1LCAxOTg3LCAx
