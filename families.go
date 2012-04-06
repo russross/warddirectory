@@ -173,31 +173,17 @@ func (dir *Directory) ParseFamilies(src io.Reader) error {
 
 		// gather the individual family members
 		var familyMembers [][]string
-		if dir.FullFamily {
-			for i := 5; i < len(fields); i += 3 {
-				familyMembers = append(familyMembers, fields[i:i+3])
-			}
+		end := len(fields)
+		if !dir.FullFamily && end > 11 {
+			end = 11
+		}
+
+		for i := 5; i < end; i += 3 {
+			familyMembers = append(familyMembers, fields[i:i+3])
 		}
 
 		// prepare couple name
-		if !dir.FullFamily {
-			if strings.HasPrefix(family.Couple, family.Surname+", ") {
-				family.Couple = family.Couple[len(family.Surname)+2:]
-			}
-
-			// run each name through the regexps
-			couple := family.Couple
-			family.Couple = ""
-			for i, name := range strings.Split(couple, " & ") {
-				name = prepName(dir.NameRegexps, name)
-				if i > 0 {
-					family.Couple += " & "
-				}
-				family.Couple += name
-			}
-		} else {
-			family.Couple = ""
-		}
+		family.Couple = ""
 
 		// prepare address
 		if dir.FamilyAddress {

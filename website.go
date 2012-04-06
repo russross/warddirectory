@@ -139,8 +139,6 @@ func index(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failure loading config data from datastore: "+err.Error(),
 			http.StatusInternalServerError)
 		return
-	} else {
-		config.FromDatastore()
 	}
 
 	// append a blank entry to each regexp list
@@ -162,8 +160,6 @@ func submit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failure loading config data from datastore: "+err.Error(),
 			http.StatusInternalServerError)
 		return
-	} else {
-		config.FromDatastore()
 	}
 
 	// next fill it in using data from the submitted form
@@ -193,7 +189,6 @@ func submit(w http.ResponseWriter, r *http.Request) {
 	}
 	config.CompileRegexps()
 	config.ComputeImplicitFields()
-	config.ToDatastore()
 
 	action := r.FormValue("SubmitButton")
 
@@ -264,7 +259,6 @@ func submit(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// store the new one
-		config.ToDatastore()
 		if err := saveLocalConfig(config); err != nil {
 			log.Printf("Upload: saving the new entry: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -366,6 +360,6 @@ func ico(w http.ResponseWriter, r *http.Request) {
 func main() {
 	log.Print("Ward Directory Generator")
 	log.Print("Open a browser and go to http://localhost:1830/")
-	log.Print("See http://warddirectory.appspot.com/ for more information")
+	log.Print("See http://russross.github.com/warddirectory/ for more information")
 	log.Fatal(http.ListenAndServe(":1830", nil))
 }

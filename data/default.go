@@ -7,9 +7,9 @@ var DefaultConfigJSON = `{
     "TitleFontSize": 16,
     "HeaderFontSize": 11.314,
 
-    "FooterLeft": "Do not copy without permission of Bishop or Stake President",
+    "FooterLeft": "Do not copy without permission from the Bishop or Stake President",
     "FooterCenter": "",
-    "FooterRight": "Prepared using http://ward-directory.appspot.com/",
+    "FooterRight": "Contact the ward clerk with corrections",
     "FooterFontSize": 8,
 
     "PageWidth": 612,

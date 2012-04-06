@@ -5,7 +5,6 @@
 package main
 
 import (
-	"github.com/russross/warddirectory/data"
 	"regexp"
 	"strings"
 	"time"
@@ -21,23 +20,8 @@ const (
 	MaximumFontSize    float64 = 100.0
 	Subject                    = "LDS Ward Directory"
 	Creator                    = "https://lds.org/directory/"
-	Producer                   = "http://ward-directory.appspot.com/"
+	Producer                   = "http://russross.github.com/warddirectory/"
 )
-
-type fontdata struct {
-	Metrics  string
-	FontFile string
-	Label    string
-	StemV    int
-}
-
-var FontSourceList = map[string]*fontdata{
-	"times-roman": {data.Times_Roman_afm, "", "FR", -1},
-	"times-bold":  {data.Times_Bold_afm, "", "FB", -1},
-	"courier":     {data.Courier_afm, "", "FT", -1},
-	"lmtt":        {data.Lmtt10_afm, data.Lmtt10_pfb, "FT", 69},
-	"lmvtt":       {data.Lmvtt10_afm, data.Lmvtt10_pfb, "FT", 69},
-}
 
 type RegularExpression struct {
 	Expression  string
@@ -82,13 +66,6 @@ type Directory struct {
 	AddressRegexps []*RegularExpression `datastore:"-"`
 	NameRegexps    []*RegularExpression `datastore:"-"`
 
-	PhoneExpressions    []string `json:"-" schema:"-"`
-	PhoneReplacements   []string `json:"-" schema:"-"`
-	AddressExpressions  []string `json:"-" schema:"-"`
-	AddressReplacements []string `json:"-" schema:"-"`
-	NameExpressions     []string `json:"-" schema:"-"`
-	NameReplacements    []string `json:"-" schema:"-"`
-
 	// fonts
 	Roman      *FontMetrics `json:"-" schema:"-" datastore:"-"`
 	Bold       *FontMetrics `json:"-" schema:"-" datastore:"-"`
@@ -117,8 +94,21 @@ func (dir *Directory) Copy() *Directory {
 	*elt = *dir
 
 	// clone the regexps
-	elt.ToDatastore()
-	elt.FromDatastore()
+	kinds := []*[]*RegularExpression{
+		&dir.PhoneRegexps,
+		&dir.AddressRegexps,
+		&dir.NameRegexps,
+	}
+	for _, kind := range kinds {
+		old := *kind
+		*kind = nil
+		for _, re := range old {
+			re2 := new(RegularExpression)
+			*re2 = *re
+			re2.Regexp = nil
+			*kind = append(*kind, re2)
+		}
+	}
 
 	elt.Roman = dir.Roman.Copy()
 	elt.Bold = dir.Bold.Copy()
@@ -139,68 +129,6 @@ func (dir *Directory) Copy() *Directory {
 	return elt
 }
 
-func (dir *Directory) FromDatastore() {
-	// convert the regexps from datastore format to normal
-	dir.PhoneRegexps = nil
-	for i := 0; i < len(dir.PhoneExpressions) && i < len(dir.PhoneReplacements); i++ {
-		re := &RegularExpression{
-			Expression:  dir.PhoneExpressions[i],
-			Replacement: dir.PhoneReplacements[i],
-		}
-		dir.PhoneRegexps = append(dir.PhoneRegexps, re)
-	}
-	dir.AddressRegexps = nil
-	for i := 0; i < len(dir.AddressExpressions) && i < len(dir.AddressReplacements); i++ {
-		re := &RegularExpression{
-			Expression:  dir.AddressExpressions[i],
-			Replacement: dir.AddressReplacements[i],
-		}
-		dir.AddressRegexps = append(dir.AddressRegexps, re)
-	}
-	dir.NameRegexps = nil
-	for i := 0; i < len(dir.NameExpressions) && i < len(dir.NameReplacements); i++ {
-		re := &RegularExpression{
-			Expression:  dir.NameExpressions[i],
-			Replacement: dir.NameReplacements[i],
-		}
-		dir.NameRegexps = append(dir.NameRegexps, re)
-	}
-}
-
-func (dir *Directory) ToDatastore() {
-	// convert the regexps to datastore-friendly format
-	dir.PhoneExpressions = nil
-	dir.PhoneReplacements = nil
-	for _, re := range dir.PhoneRegexps {
-		if strings.TrimSpace(re.Expression) == "" {
-			// skip empty regexps
-			continue
-		}
-		dir.PhoneExpressions = append(dir.PhoneExpressions, re.Expression)
-		dir.PhoneReplacements = append(dir.PhoneReplacements, re.Replacement)
-	}
-	dir.AddressExpressions = nil
-	dir.AddressReplacements = nil
-	for _, re := range dir.AddressRegexps {
-		if strings.TrimSpace(re.Expression) == "" {
-			// skip empty regexps
-			continue
-		}
-		dir.AddressExpressions = append(dir.AddressExpressions, re.Expression)
-		dir.AddressReplacements = append(dir.AddressReplacements, re.Replacement)
-	}
-	dir.NameExpressions = nil
-	dir.NameReplacements = nil
-	for _, re := range dir.NameRegexps {
-		if strings.TrimSpace(re.Expression) == "" {
-			// skip empty regexps
-			continue
-		}
-		dir.NameExpressions = append(dir.NameExpressions, re.Expression)
-		dir.NameReplacements = append(dir.NameReplacements, re.Replacement)
-	}
-}
-
 func (dir *Directory) ComputeImplicitFields() {
 	dir.ColumnCount = dir.ColumnsPerPage * dir.Pages
 	dir.ColumnWidth = dir.PageWidth
@@ -211,6 +139,22 @@ func (dir *Directory) ComputeImplicitFields() {
 	dir.ColumnHeight = dir.PageHeight
 	dir.ColumnHeight -= dir.TopMargin
 	dir.ColumnHeight -= dir.BottomMargin
+
+	// remove empty regexps
+	kinds := []*[]*RegularExpression{
+		&dir.PhoneRegexps,
+		&dir.AddressRegexps,
+		&dir.NameRegexps,
+	}
+	for _, kind := range kinds {
+		old := *kind
+		*kind = nil
+		for _, re := range old {
+			if strings.TrimSpace(re.Expression) != "" {
+				*kind = append(*kind, re)
+			}
+		}
+	}
 }
 
 // build a complete PDF object for this directory

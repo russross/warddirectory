@@ -64,6 +64,21 @@ type Box struct {
 	Penalty  int
 }
 
+type fontdata struct {
+	Metrics  string
+	FontFile string
+	Label    string
+	StemV    int
+}
+
+var FontSourceList = map[string]*fontdata{
+	"times-roman": {data.Times_Roman_afm, "", "FR", -1},
+	"times-bold":  {data.Times_Bold_afm, "", "FB", -1},
+	"courier":     {data.Courier_afm, "", "FT", -1},
+	"lmtt":        {data.Lmtt10_afm, data.Lmtt10_pfb, "FT", 69},
+	"lmvtt":       {data.Lmvtt10_afm, data.Lmvtt10_pfb, "FT", 69},
+}
+
 var FontList map[string]*FontMetrics
 
 var roman, bold, courier, lmtt, lmvtt *FontMetrics
