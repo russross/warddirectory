@@ -25,12 +25,13 @@ type Person struct {
 }
 
 type Family struct {
-	Surname string
-	Couple  string
-	Address string
-	Phone   string
-	Email   string
-	People  []*Person
+	Surname   string
+	Couple    string
+	HasCouple bool
+	Address   string
+	Phone     string
+	Email     string
+	People    []*Person
 }
 
 // sortable list
@@ -182,9 +183,6 @@ func (dir *Directory) ParseFamilies(src io.Reader) error {
 			familyMembers = append(familyMembers, fields[i:i+3])
 		}
 
-		// prepare couple name
-		family.Couple = ""
-
 		// prepare address
 		if dir.FamilyAddress {
 			family.Address = prepAddress(dir.AddressRegexps, family.Address)
@@ -207,12 +205,17 @@ func (dir *Directory) ParseFamilies(src io.Reader) error {
 		}
 
 		// gather the list of family members
-		for _, individual := range familyMembers {
+		family.HasCouple = len(familyMembers) > 1
+		for i, individual := range familyMembers {
 			person := new(Person)
 			person.Name, person.Phone, person.Email = individual[0], individual[1], individual[2]
 
 			// empty entry?
 			if person.Name == "" {
+				if i < 2 {
+					// missing an entry for a head of household
+					family.HasCouple = false
+				}
 				continue
 			}
 
@@ -308,33 +311,6 @@ func (dir *Directory) FormatFamilies() {
 
 		needcomma := false
 
-		// next the couple name (if that is all that was requested)
-		if family.Couple != "" {
-			if needcomma {
-				entry = packBox(entry, ",", -1, dir.Roman)
-				needcomma = false
-			}
-			for i, name := range strings.Split(family.Couple, " & ") {
-				space := 0
-
-				// discourage line breaks between people
-				if i > 0 {
-					entry = packBox(entry, "&", 2, dir.Roman)
-					space = 1
-				}
-
-				// split the person's name into discrete words
-				for j, word := range strings.Fields(name) {
-					// strongly discourage line breaks within a person's name
-					if j > 0 {
-						space = 2
-					}
-					entry = packBox(entry, word, space, dir.Roman)
-				}
-			}
-			needcomma = true
-		}
-
 		// next the phone number (if present)
 		if family.Phone != "" {
 			if needcomma {
@@ -356,8 +332,12 @@ func (dir *Directory) FormatFamilies() {
 		}
 
 		// now the family members
-		for _, person := range family.People {
-			if needcomma {
+		for n, person := range family.People {
+			if needcomma && family.HasCouple && dir.UseAmpersand && n == 1 {
+				// use an ampersand to join spouses
+				entry = packBox(entry, "&", 2, dir.Roman)
+				needcomma = false
+			} else if needcomma {
 				entry = packBox(entry, ",", -1, dir.Roman)
 				needcomma = false
 			}
@@ -440,37 +420,22 @@ var FallbackRegexp = regexp.MustCompile(`^I don't match anything$`)
 
 func (dir *Directory) CompileRegexps() {
 	var err error
-	phone := dir.PhoneRegexps
-	dir.PhoneRegexps = nil
-	for _, elt := range phone {
-		if strings.TrimSpace(elt.Expression) != "" {
-			dir.PhoneRegexps = append(dir.PhoneRegexps, elt)
-		}
-		if elt.Regexp, err = regexp.Compile("(?i:" + elt.Expression + ")"); err != nil {
-			elt.Regexp = FallbackRegexp
-			elt.Expression = "!!Error!! " + elt.Expression
-		}
+	kinds := []*[]*RegularExpression{
+		&dir.PhoneRegexps,
+		&dir.AddressRegexps,
+		&dir.NameRegexps,
 	}
-	address := dir.AddressRegexps
-	dir.AddressRegexps = nil
-	for _, elt := range address {
-		if strings.TrimSpace(elt.Expression) != "" {
-			dir.AddressRegexps = append(dir.AddressRegexps, elt)
-		}
-		if elt.Regexp, err = regexp.Compile("(?i:" + elt.Expression + ")"); err != nil {
-			elt.Regexp = FallbackRegexp
-			elt.Expression = "!!Error!! " + elt.Expression
-		}
-	}
-	name := dir.NameRegexps
-	dir.NameRegexps = nil
-	for _, elt := range name {
-		if strings.TrimSpace(elt.Expression) != "" {
-			dir.NameRegexps = append(dir.NameRegexps, elt)
-		}
-		if elt.Regexp, err = regexp.Compile("(?i:" + elt.Expression + ")"); err != nil {
-			elt.Regexp = FallbackRegexp
-			elt.Expression = "!!Error!! " + elt.Expression
+	for _, kind := range kinds {
+		old := *kind
+		*kind = nil
+		for _, elt := range old {
+			if strings.TrimSpace(elt.Expression) != "" {
+				*kind = append(*kind, elt)
+			}
+			if elt.Regexp, err = regexp.Compile("(?i:" + elt.Expression + ")"); err != nil {
+				elt.Regexp = FallbackRegexp
+				elt.Expression = "!!Error!! " + elt.Expression
+			}
 		}
 	}
 

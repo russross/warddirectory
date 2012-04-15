@@ -135,8 +135,8 @@ func index(w http.ResponseWriter, r *http.Request) {
 	config := defaultConfig.Copy()
 	err := loadLocalConfig(config)
 	if err != nil {
-		log.Printf("index: Failure loading config data from datastore: %v", err)
-		http.Error(w, "Failure loading config data from datastore: "+err.Error(),
+		log.Printf("index: Failure loading config data from disk: %v", err)
+		http.Error(w, "Failure loading config data from disk: "+err.Error(),
 			http.StatusInternalServerError)
 		return
 	}
@@ -156,8 +156,8 @@ func submit(w http.ResponseWriter, r *http.Request) {
 	// load saved config into it
 	err := loadLocalConfig(config)
 	if err != nil {
-		log.Printf("submit: Failure loading config data from datastore: %v", err)
-		http.Error(w, "Failure loading config data from datastore: "+err.Error(),
+		log.Printf("submit: Failure loading config data from disk: %v", err)
+		http.Error(w, "Failure loading config data from disk: "+err.Error(),
 			http.StatusInternalServerError)
 		return
 	}

@@ -462,6 +462,10 @@ email addresses will be omitted.</p>
     <input type="checkbox" class="save" id="FullFamily" name="FullFamily" value="true"{{if .FullFamily}} checked="yes"{{end}}>
   </p>
   <p>
+    <label for="UseAmpersand">Separate couples with “&amp;”</label>
+    <input type="checkbox" class="save" id="UseAmpersand" name="UseAmpersand" value="true"{{if .FullFamily}} checked="yes"{{end}}>
+  </p>
+  <p>
     <label for="FamilyPhone">Family phone number</label>
     <input type="checkbox" class="save" id="FamilyPhone" name="FamilyPhone" value="true"{{if .FamilyPhone}} checked="yes"{{end}}>
   </p>

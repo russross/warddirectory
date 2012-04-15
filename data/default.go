@@ -29,6 +29,7 @@ var DefaultConfigJSON = `{
     "FamilyAddress": true,
     "PersonalPhones": true,
     "PersonalEmails": true,
+	"UseAmpersand": true,
 
     "LeadingMultiplier": 1.2,
     "MinimumSpaceMultiplier": 0.85,

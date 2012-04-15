@@ -27,7 +27,7 @@ type RegularExpression struct {
 	Expression  string
 	Replacement string
 
-	Regexp *regexp.Regexp `json:"-" schema:"-" datastore:"-"`
+	Regexp *regexp.Regexp `json:"-" schema:"-"`
 }
 
 type Directory struct {
@@ -61,32 +61,33 @@ type Directory struct {
 	FamilyAddress               bool
 	PersonalPhones              bool
 	PersonalEmails              bool
+	UseAmpersand                bool
 
-	PhoneRegexps   []*RegularExpression `datastore:"-"`
-	AddressRegexps []*RegularExpression `datastore:"-"`
-	NameRegexps    []*RegularExpression `datastore:"-"`
+	PhoneRegexps   []*RegularExpression
+	AddressRegexps []*RegularExpression
+	NameRegexps    []*RegularExpression
 
 	// fonts
-	Roman      *FontMetrics `json:"-" schema:"-" datastore:"-"`
-	Bold       *FontMetrics `json:"-" schema:"-" datastore:"-"`
-	Typewriter *FontMetrics `json:"-" schema:"-" datastore:"-"`
+	Roman      *FontMetrics `json:"-" schema:"-"`
+	Bold       *FontMetrics `json:"-" schema:"-"`
+	Typewriter *FontMetrics `json:"-" schema:"-"`
 
 	// computed values
-	ColumnWidth  float64 `json:"-" schema:"-" datastore:"-"`
-	ColumnHeight float64 `json:"-" schema:"-" datastore:"-"`
-	ColumnCount  int     `json:"-" schema:"-" datastore:"-"`
+	ColumnWidth  float64 `json:"-" schema:"-"`
+	ColumnHeight float64 `json:"-" schema:"-"`
+	ColumnCount  int     `json:"-" schema:"-"`
 
 	// processed values
-	Families     []*Family  `json:"-" schema:"-" datastore:"-"`
-	Entries      [][]*Box   `json:"-" schema:"-" datastore:"-"`
-	Linebreaks   [][]int    `json:"-" schema:"-" datastore:"-"`
-	Columnbreaks []int      `json:"-" schema:"-" datastore:"-"`
-	Lines        [][][]*Box `json:"-" schema:"-" datastore:"-"`
-	FontSize     float64    `json:"-" schema:"-" datastore:"-"`
-	Columns      []string   `json:"-" schema:"-" datastore:"-"`
-	Header       string     `json:"-" schema:"-" datastore:"-"`
-	Footer       string     `json:"-" schema:"-" datastore:"-"`
-	Author       string     `json:"-" schema:"-" datastore:"-"`
+	Families     []*Family  `json:"-" schema:"-"`
+	Entries      [][]*Box   `json:"-" schema:"-"`
+	Linebreaks   [][]int    `json:"-" schema:"-"`
+	Columnbreaks []int      `json:"-" schema:"-"`
+	Lines        [][][]*Box `json:"-" schema:"-"`
+	FontSize     float64    `json:"-" schema:"-"`
+	Columns      []string   `json:"-" schema:"-"`
+	Header       string     `json:"-" schema:"-"`
+	Footer       string     `json:"-" schema:"-"`
+	Author       string     `json:"-" schema:"-"`
 }
 
 func (dir *Directory) Copy() *Directory {
