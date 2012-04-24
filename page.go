@@ -83,9 +83,12 @@ var indexTemplate = `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//
 <script type="text/javascript" src="/jquery.js"></script>
 <script type="text/javascript">
 jQuery(function ($) {
+    // clicking on a section label hides/shows it
     $('fieldset.section > legend').click(function () {
         $(this).siblings().toggle();
     }).click();
+
+    // let the user change the unit of measure
     $('#units').change(function() {
         var points_per = Number($('#units').val());
         $('.measurement').each(function() {
@@ -94,12 +97,17 @@ jQuery(function ($) {
             this.value = value;
         });
     }).change();
+
+    // when a measurement is changed by the user in #units,
+    // update the hidden field (which is stored in points)
     $('.measurement').change(function() {
         var points_per = Number($('#units').val());
         var id = this.id.substr(5);
         var value = Number(this.value) * points_per;
         $('#' + id).val(value).change();
     });
+
+    // forbid generating if not file has been selected
     $('#generatebutton').click(function() {
         // make sure they selected a file before trying to upload
         if ($('#MembershipData').val() == '') {
@@ -107,6 +115,8 @@ jQuery(function ($) {
             return false;
         }
     });
+
+    // forbid importing if no file has been selected
     $('#importbutton').click(function() {
         // make sure they selected a file before trying to upload
         if ($('#DirectoryConfig').val() == '') {
@@ -114,12 +124,16 @@ jQuery(function ($) {
             return false;
         }
     });
+
+    // confirm delete requests
     $('#deletebutton').click(function() {
         // confirm before deleting
         if (!confirm("Are you sure you want to clear all of your settings?")) {
             return false;
         }
     });
+
+    // save in the background any time anything is updated
     $('.save').live('change', function () {
         // submit using ajax to avoid reseting the csv file field
         var data = $('#submitform').serialize();
@@ -130,74 +144,49 @@ jQuery(function ($) {
             data: data,
             success: function () { console.log('Saved'); },
             error: function (err, msg, http) {
-                alert('Oops! Save did not work! [' + msg + ', ' + http + ']');
+                alert('Oops! Failed to save! Did you shut down the server?');
+                console.log('Failed save');
+                console.log(err);
+                console.log(msg);
+                console.log(http);
             }
         });
         return false;
     });
-    $('.regexplist').sortable({
-        stop: function() {
-		    var last;
+
+    // renumber all regexp pairs in DOM order
+    var renumber = function() {
+        var last;
+        // loop over each kind of regexp pair list
+        $('.regexplist').each(function () {
             $(this).find('fieldset').each(function(i, elt) {
                 var $elt = $(elt);
                 $elt.find('label').each(function () {
                     this.htmlFor = this.htmlFor.replace(/\.\d+\./, '.' + i + '.');
                 });
                 $elt.find('input').each(function () {
-					last = this;
+                    last = this;
                     this.id = this.id.replace(/\.\d+\./, '.' + i + '.');
                     this.name = this.name.replace(/\.\d+\./, '.' + i + '.');
                 });
             });
-			$(last).change();
-        }
+        });
+        $(last).change();
+    };
+
+    // when a user drags and drops a regexp pair, renumber them
+    $('.regexplist').sortable({
+        stop: renumber
     });
-    $('#morephone').click(function () {
-        var n = $('#nextphone').val();
-        $('#nextphone').val(Number(n)+1);
-        var expr = 'PhoneRegexps.' + n + '.Expression';
-        var repl = 'PhoneRegexps.' + n + '.Replacement';
-        var s = '<fieldset>\n<legend>Phone substitution</legend>\n<p>\n';
-        s += '  <label for="' + expr + '">Search for</label>\n';
-        s += '  <input type="text" class="save" id="' + expr + '" name="' + expr + '" value="">\n';
-        s += '</p>\n';
-        s += '<p>\n';
-        s += '  <label for="' + repl + '">Replace with</label>\n';
-        s += '  <input type="text" class="save" id="' + repl + '" name="' + repl + '" value="">\n';
-        s += '</p>\n</fieldset>\n';
-        $('#phoneregexplist').append(s);
-        return false;
-    });
-    $('#moreaddress').click(function () {
-        var n = $('#nextaddress').val();
-        $('#nextaddress').val(Number(n)+1);
-        var expr = 'AddressRegexps.' + n + '.Expression';
-        var repl = 'AddressRegexps.' + n + '.Replacement';
-        var s = '<fieldset>\n<legend>Address substitution</legend>\n<p>\n';
-        s += '  <label for="' + expr + '">Search for</label>\n';
-        s += '  <input type="text" class="save" id="' + expr + '" name="' + expr + '" value="">\n';
-        s += '</p>\n';
-        s += '<p>\n';
-        s += '  <label for="' + repl + '">Replace with</label>\n';
-        s += '  <input type="text" class="save" id="' + repl + '" name="' + repl + '" value="">\n';
-        s += '</p>\n</fieldset>\n';
-        $('#addressregexplist').append(s);
-        return false;
-    });
-    $('#morename').click(function () {
-        var n = $('#nextname').val();
-        $('#nextname').val(Number(n)+1);
-        var expr = 'NameRegexps.' + n + '.Expression';
-        var repl = 'NameRegexps.' + n + '.Replacement';
-        var s = '<fieldset>\n<legend>Name substitution</legend>\n<p>\n';
-        s += '  <label for="' + expr + '">Search for</label>\n';
-        s += '  <input type="text" class="save" id="' + expr + '" name="' + expr + '" value="">\n';
-        s += '</p>\n';
-        s += '<p>\n';
-        s += '  <label for="' + repl + '">Replace with</label>\n';
-        s += '  <input type="text" class="save" id="' + repl + '" name="' + repl + '" value="">\n';
-        s += '</p>\n</fieldset>\n';
-        $('#nameregexplist').append(s);
+
+    // when a new regexp pair is requested, clone an existing one
+    $('.moreregexps').click(function () {
+        // clone one of the existing pairs
+        var $list = $(this).parent('p').prev('ul');
+        var $elt = $list.children('li').last().clone().appendTo($list);
+
+        // renumber the whole list to fix this one
+        renumber();
         return false;
     });
 });
@@ -327,15 +316,15 @@ rearrange the footers, but please include the required text.<p>
 
   <p>
     <label for="FooterLeft">Left-flushed text</label>
-	<input type="text" class="save" id="FooterLeft" name="FooterLeft" value="{{.FooterLeft | html}}">
+    <input type="text" class="save" id="FooterLeft" name="FooterLeft" value="{{.FooterLeft | html}}">
   </p>
   <p>
     <label for="FooterCenter">Centered text</label>
-	<input type="text" class="save" id="FooterCenter" name="FooterCenter" value="{{.FooterCenter | html}}">
+    <input type="text" class="save" id="FooterCenter" name="FooterCenter" value="{{.FooterCenter | html}}">
   </p>
   <p>
     <label for="FooterRight">Right-flushed text</label>
-	<input type="text" class="save" id="FooterRight" name="FooterRight" value="{{.FooterRight | html}}">
+    <input type="text" class="save" id="FooterRight" name="FooterRight" value="{{.FooterRight | html}}">
   </p>
 
 <p>The footer is placed in the bottom margin, so you may need to adjust your
@@ -544,9 +533,8 @@ for regular expression tutorials.</p>
   </fieldset>
 </li>{{end}}
 </ul>
-<p><a id="morephone" href="#">Click here to add another substitution pair</a>.
+<p><a class="moreregexps" href="#">Click here to add another substitution pair</a>.
 Drag and drop to change the order. Blank pairs are ignored.</p>
-<input type="hidden" id="nextphone" value="{{len .PhoneRegexps}}">
 </fieldset>
 
 <fieldset class="section">
@@ -606,9 +594,8 @@ the help in improving the membership records.</p>
   </fieldset>
 </li>{{end}}
 </ul>
-<p><a id="moreaddress" href="#">Click here to add another substitution pair</a>.
+<p><a class="moreregexps" href="#">Click here to add another substitution pair</a>.
 Drag and drop to change the order. Blank pairs are ignored.</p>
-<input type="hidden" id="nextaddress" value="{{len .AddressRegexps}}">
 </fieldset>
 
 <fieldset class="section">
@@ -646,9 +633,8 @@ for the help in improving the membership records.</p>
   </fieldset>
 </li>{{end}}
 </ul>
-<p><a id="morename" href="#">Click here to add another substitution pair</a>.
+<p><a class="moreregexps" href="#">Click here to add another substitution pair</a>.
 Drag and drop to change the order. Blank pairs are ignored.</p>
-<input type="hidden" id="nextname" value="{{len .NameRegexps}}">
 </fieldset>
 
 <h1>Import/export settings</h1>
