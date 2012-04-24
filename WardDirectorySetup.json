@@ -1,0 +1,117 @@
+{
+    "Title": "Dixie Canyon Seventh Ward",
+    "DateFormat": "January 2, 2006",
+    "Disclaimer": "For Church Use Only",
+    "TitleFontSize": 16,
+    "HeaderFontSize": 11.314,
+    "FooterLeft": "Do not copy without permission from the Bishop or Stake President",
+    "FooterCenter": "",
+    "FooterRight": "Contact the ward clerk with corrections",
+    "FooterFontSize": 8,
+    "PageWidth": 612,
+    "PageHeight": 792,
+    "TopMargin": 72,
+    "BottomMargin": 54,
+    "LeftMargin": 36,
+    "RightMargin": 36,
+    "Pages": 2,
+    "ColumnsPerPage": 2,
+    "ColumnSep": 10,
+    "EmailFont": "lmvtt",
+    "LeadingMultiplier": 1.2,
+    "MinimumSpaceMultiplier": 0.85,
+    "MinimumLineHeightMultiplier": 0.95,
+    "FirstLineDedentMultiplier": 1.618033988749895,
+    "FullFamily": true,
+    "FamilyPhone": true,
+    "FamilyEmail": true,
+    "FamilyAddress": true,
+    "PersonalPhones": true,
+    "PersonalEmails": true,
+    "UseAmpersand": true,
+    "PhoneRegexps": [
+        {
+            "Expression": "^[^7]\\d{2}-(\\d{3}-\\d{4})$",
+            "Replacement": "$1"
+        }
+    ],
+    "AddressRegexps": [
+        {
+            "Expression": "\\bDrive North ",
+            "Replacement": "Dr N, "
+        },
+        {
+            "Expression": "\\bCove West ",
+            "Replacement": "Cv W, "
+        },
+        {
+            "Expression": "\\bCircle Drive ",
+            "Replacement": "Cir Dr, "
+        },
+        {
+            "Expression": "\\bDrive ",
+            "Replacement": "Dr, "
+        },
+        {
+            "Expression": "\\bStreet ",
+            "Replacement": "St, "
+        },
+        {
+            "Expression": "\\bLane ",
+            "Replacement": "Ln, "
+        },
+        {
+            "Expression": "\\bAvenue ",
+            "Replacement": "Ave, "
+        },
+        {
+            "Expression": "\\bRoute ",
+            "Replacement": "Rte, "
+        },
+        {
+            "Expression": "\\bCourt ",
+            "Replacement": "Ct, "
+        },
+        {
+            "Expression": "\\bRoad ",
+            "Replacement": "Rd, "
+        },
+        {
+            "Expression": "\\bCircle ",
+            "Replacement": "Cir, "
+        },
+        {
+            "Expression": "\\bWest ",
+            "Replacement": "W, "
+        },
+        {
+            "Expression": "\\bEast ",
+            "Replacement": "E, "
+        },
+        {
+            "Expression": "\\bNorth ",
+            "Replacement": "N, "
+        },
+        {
+            "Expression": "\\bSouth ",
+            "Replacement": "S, "
+        },
+        {
+            "Expression": "\\bAlley ",
+            "Replacement": "Aly, "
+        },
+        {
+            "Expression": "\\bBoulevard ",
+            "Replacement": "Blvd, "
+        },
+        {
+            "Expression": "\\bLaurel Lee ",
+            "Replacement": "Laurel Lee, "
+        },
+        {
+            "Expression": ", [\\w ]+, \\w\\w \\d{5}(-\\d{4})?$",
+            "Replacement": ""
+        }
+    ],
+    "NameRegexps": null
+}
