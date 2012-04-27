@@ -184,6 +184,7 @@ jQuery(function ($) {
         // clone one of the existing pairs
         var $list = $(this).parent('p').prev('ul');
         var $elt = $list.children('li').last().clone().appendTo($list);
+		$elt.find('input').val('');
 
         // renumber the whole list to fix this one
         renumber();
