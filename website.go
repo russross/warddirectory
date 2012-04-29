@@ -359,7 +359,10 @@ func ico(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	log.Print("Ward Directory Generator")
+	log.Print("")
 	log.Print("Open a browser and go to http://localhost:1830/")
-	log.Print("See http://russross.github.com/warddirectory/ for more information")
+	log.Print("")
+	log.Print("See http://russross.github.com/warddirectory/")
+	log.Print("    for more information")
 	log.Fatal(http.ListenAndServe("127.0.0.1:1830", nil))
 }
