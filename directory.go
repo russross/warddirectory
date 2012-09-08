@@ -88,6 +88,9 @@ type Directory struct {
 	Header       string     `json:"-" schema:"-"`
 	Footer       string     `json:"-" schema:"-"`
 	Author       string     `json:"-" schema:"-"`
+
+	// part of the HTML form, we ignore it
+	SubmitButton string `json:"-"`
 }
 
 func (dir *Directory) Copy() *Directory {

@@ -1,6 +1,4 @@
-package main
-
-var indexTemplate = `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 
 <html>
 <head>
@@ -348,13 +346,13 @@ the dimensions are 210&times;297&nbsp;mm.</p>
 
   <p>
     <label for="user_PageWidth">Page width</label>
-    <input type="text" class="measurement" id="user_PageWidth" name="user_PageWidth" value="">
+    <input type="text" class="measurement" id="user_PageWidth" value="">
     <input type="hidden" class="save" id="PageWidth" name="PageWidth" value="{{.PageWidth | html}}">
   </p>
 
   <p>
     <label for="user_PageHeight">Page height</label>
-    <input type="text" class="measurement" id="user_PageHeight" name="user_PageHeight" value="">
+    <input type="text" class="measurement" id="user_PageHeight" value="">
     <input type="hidden" class="save" id="PageHeight" name="PageHeight" value="{{.PageHeight | html}}">
   </p>
 
@@ -364,7 +362,7 @@ space for it.</p>
 
   <p>
     <label for="user_TopMargin">Top margin</label>
-    <input type="text" class="measurement" id="user_TopMargin" name="user_TopMargin" value="">
+    <input type="text" class="measurement" id="user_TopMargin" value="">
     <input type="hidden" class="save" id="TopMargin" name="TopMargin" value="{{.TopMargin | html}}">
   </p>
 
@@ -373,7 +371,7 @@ space for it.</p>
 
   <p>
     <label for="user_BottomMargin">Bottom margin</label>
-    <input type="text" class="measurement" id="user_BottomMargin" name="user_BottomMargin" value="">
+    <input type="text" class="measurement" id="user_BottomMargin" value="">
     <input type="hidden" class="save" id="BottomMargin" name="BottomMargin" value="{{.BottomMargin | html}}">
   </p>
 
@@ -382,12 +380,12 @@ space for it.</p>
 
   <p>
     <label for="user_LeftMargin">Left margin</label>
-    <input type="text" class="measurement" id="user_LeftMargin" name="user_LeftMargin" value="">
+    <input type="text" class="measurement" id="user_LeftMargin" value="">
     <input type="hidden" class="save" id="LeftMargin" name="LeftMargin" value="{{.LeftMargin | html}}">
   </p>
   <p>
     <label for="user_RightMargin">Right margin</label>
-    <input type="text" class="measurement" id="user_RightMargin" name="user_RightMargin" value="">
+    <input type="text" class="measurement" id="user_RightMargin" value="">
     <input type="hidden" class="save" id="RightMargin" name="RightMargin" value="{{.RightMargin | html}}">
   </p>
 
@@ -414,7 +412,7 @@ printing on a single page, 3 or more might look better.</p>
 
   <p>
     <label for="user_ColumnSep">Space between columns</label>
-    <input type="text" class="measurement" id="user_ColumnSep" name="user_ColumnSep" value="">
+    <input type="text" class="measurement" id="user_ColumnSep" value="">
     <input type="hidden" class="save" id="ColumnSep" name="ColumnSep" value="{{.ColumnSep | html}}">
   </p>
 
@@ -690,4 +688,3 @@ document.write(
 </div>
 </body>
 </html>
-`

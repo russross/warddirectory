@@ -1,4 +1,5 @@
 warddirectory
 warddirectory.exe
+base64zipdata.go
 *.zip
 *.tar.gz

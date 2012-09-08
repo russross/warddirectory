@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"code.google.com/p/gorilla/schema"
 	"encoding/json"
-	"github.com/russross/warddirectory/data"
 	"io"
 	"io/ioutil"
 	"log"
@@ -19,33 +18,6 @@ import (
 var t *template.Template
 var defaultConfig Directory
 var decoder = schema.NewDecoder()
-var jquery = MustDecodeBase64(data.Jquery_js)
-var favicon = MustDecodeBase64(data.Favicon_ico)
-
-func init() {
-	var err error
-
-	// now load the templates
-	t = new(template.Template)
-	t.Funcs(template.FuncMap{
-		"ifEqual": ifEqual,
-	})
-	template.Must(t.Parse(indexTemplate))
-
-	// load the default config file
-	var raw = []byte(data.DefaultConfigJSON)
-	if err = json.Unmarshal(raw, &defaultConfig); err != nil {
-		log.Fatal("Unable to parse default config file: ", err)
-	}
-	defaultConfig.ComputeImplicitFields()
-	defaultConfig.Roman = FontList["times-roman"]
-	defaultConfig.Bold = FontList["times-bold"]
-
-	http.HandleFunc("/", index)
-	http.HandleFunc("/submit", submit)
-	http.HandleFunc("/jquery.js", js)
-	http.HandleFunc("/favicon.ico", ico)
-}
 
 func saveLocalConfig(config *Directory) (err error) {
 	// where to save?
@@ -349,15 +321,38 @@ func submit(w http.ResponseWriter, r *http.Request) {
 
 func js(w http.ResponseWriter, r *http.Request) {
 	w.Header()["Content-Type"] = []string{"application/javascript"}
-	w.Write(jquery)
+	w.Write(dataFiles["jquery.js"])
 }
 
 func ico(w http.ResponseWriter, r *http.Request) {
 	w.Header()["Content-Type"] = []string{"image/x-icon"}
-	w.Write(favicon)
+	w.Write(dataFiles["favicon.ico"])
 }
 
 func main() {
+	// do some setup
+	var err error
+
+	// now load the templates
+	t = new(template.Template)
+	t.Funcs(template.FuncMap{
+		"ifEqual": ifEqual,
+	})
+	template.Must(t.Parse(string(dataFiles["page.html"])))
+
+	// load the default config file
+	if err = json.Unmarshal(dataFiles["default.json"], &defaultConfig); err != nil {
+		log.Fatal("Unable to parse default config file: ", err)
+	}
+	defaultConfig.ComputeImplicitFields()
+	defaultConfig.Roman = FontList["times-roman"]
+	defaultConfig.Bold = FontList["times-bold"]
+
+	http.HandleFunc("/", index)
+	http.HandleFunc("/submit", submit)
+	http.HandleFunc("/jquery.js", js)
+	http.HandleFunc("/favicon.ico", ico)
+
 	log.Print("Ward Directory Generator")
 	log.Print("Open a browser and go to http://localhost:1830/")
 	log.Print("See http://russross.github.com/warddirectory/")

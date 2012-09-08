@@ -8,10 +8,8 @@ package main
 import (
 	"bytes"
 	"compress/zlib"
-	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/russross/warddirectory/data"
 	"log"
 	"strings"
 )
@@ -71,20 +69,22 @@ type fontdata struct {
 	StemV    int
 }
 
-var FontSourceList = map[string]*fontdata{
-	"times-roman": {data.Times_Roman_afm, "", "FR", -1},
-	"times-bold":  {data.Times_Bold_afm, "", "FB", -1},
-	"courier":     {data.Courier_afm, "", "FT", -1},
-	"lmtt":        {data.Lmtt10_afm, data.Lmtt10_pfb, "FT", 69},
-	"lmvtt":       {data.Lmvtt10_afm, data.Lmvtt10_pfb, "FT", 69},
-}
-
 var FontList map[string]*FontMetrics
 
 var roman, bold, courier, lmtt, lmvtt *FontMetrics
 var unicodeToGlyph map[rune]string
 
 func init() {
+	loadDataFiles()
+
+	var FontSourceList = map[string]*fontdata{
+		"times-roman": {string(dataFiles["Times-Roman.afm"]), "", "FR", -1},
+		"times-bold":  {string(dataFiles["Times-Bold.afm"]), "", "FB", -1},
+		"courier":     {string(dataFiles["Courier.afm"]), "", "FT", -1},
+		"lmtt":        {string(dataFiles["lmtt10.afm"]), string(dataFiles["lmtt10.pfb"]), "FT", 69},
+		"lmvtt":       {string(dataFiles["lmvtt10.afm"]), string(dataFiles["lmvtt10.pfb"]), "FT", 69},
+	}
+
 	var err error
 
 	// first load the fonts
@@ -94,7 +94,7 @@ func init() {
 	}
 
 	// get the complete list of glyphs we know about
-	if unicodeToGlyph, err = GlyphMapping(FontList, string(MustDecodeBase64(data.Glyphlist_txt))); err != nil {
+	if unicodeToGlyph, err = GlyphMapping(FontList, string(dataFiles["glyphlist.txt"])); err != nil {
 		log.Fatal("loading glyph metrics: ", err)
 	}
 }
@@ -102,14 +102,14 @@ func init() {
 func loadFont(f *fontdata) (font *FontMetrics) {
 	var err error
 
-	if font, err = ParseFontMetricsFile(string(MustDecodeBase64(f.Metrics)), f.Label); err != nil {
+	if font, err = ParseFontMetricsFile(f.Metrics, f.Label); err != nil {
 		log.Fatalf("loading font metrics: %v", err)
 	}
 	if f.StemV > 0 && font.StemV <= 0 {
 		font.StemV = f.StemV
 	}
 	if len(f.FontFile) > 0 {
-		font.File = MustDecodeBase64(f.FontFile)
+		font.File = []byte(f.FontFile)
 		var buf bytes.Buffer
 		var writer *zlib.Writer
 		if writer, err = zlib.NewWriterLevel(&buf, zlib.BestCompression); err != nil {
@@ -255,13 +255,4 @@ func (font *FontMetrics) Copy() *FontMetrics {
 	elt.FirstChar = 0
 	elt.LastChar = 0
 	return elt
-}
-
-func MustDecodeBase64(data string) []byte {
-	// decode the base64-encoded file
-	contents, err := base64.StdEncoding.DecodeString(data)
-	if err != nil {
-		log.Fatalf("decoding base64: %v", err)
-	}
-	return contents
 }
