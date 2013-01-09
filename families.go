@@ -125,7 +125,7 @@ func prepPhone(regexps []*RegularExpression, phone, familyPhone string) string {
 }
 
 func prepEmail(email, familyEmail string) string {
-	if email == familyEmail {
+	if strings.ToLower(email) == strings.ToLower(familyEmail) {
 		email = ""
 	}
 

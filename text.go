@@ -247,7 +247,7 @@ func (elt *BoxSlice) Cost(a, b int, first, last bool) float64 {
 
 		// no penalty for trailing spaces on the last line
 		if last {
-			//excess = 0.0
+			excess = 0.0
 		}
 
 		return excess*excess + penalty
