@@ -10,11 +10,7 @@
 package main
 
 import (
-	"encoding/csv"
-	"fmt"
-	"io"
 	"regexp"
-	"sort"
 	"strings"
 )
 
@@ -53,29 +49,6 @@ func (lst familyList) Less(i, j int) bool {
 
 func (lst familyList) Swap(i, j int) {
 	lst[i], lst[j] = lst[j], lst[i]
-}
-
-var headerFields = []string{
-	"Family Name", "Couple Name",
-	"Family Phone", "Family Email", "Family Address",
-	"Head Of House Name", "Head Of House Phone", "Head Of House Email",
-	"Spouse Name", "Spouse Phone", "Spouse Email",
-	"Child Name", "Child Phone", "Child Email",
-	"Child Name", "Child Phone", "Child Email",
-	"Child Name", "Child Phone", "Child Email",
-	"Child Name", "Child Phone", "Child Email",
-	"Child Name", "Child Phone", "Child Email",
-	"Child Name", "Child Phone", "Child Email",
-	"Child Name", "Child Phone", "Child Email",
-	"Child Name", "Child Phone", "Child Email",
-	"Child Name", "Child Phone", "Child Email",
-	"Child Name", "Child Phone", "Child Email",
-	"Child Name", "Child Phone", "Child Email",
-	"Child Name", "Child Phone", "Child Email",
-	"Child Name", "Child Phone", "Child Email",
-	"Child Name", "Child Phone", "Child Email",
-	"Child Name", "Child Phone", "Child Email",
-	"Child Name", "Child Phone", "Child Email",
 }
 
 func prepName(regexps []*RegularExpression, name string) string {
@@ -134,134 +107,6 @@ func prepEmail(email, familyEmail string) string {
 
 var Spaces = regexp.MustCompile(`\s+`)
 
-func (dir *Directory) ParseFamilies(src io.Reader) error {
-	reader := csv.NewReader(src)
-
-	// the CSV reader is picky about the number of fields being consistent
-	// this relaxes it
-	reader.FieldsPerRecord = -1
-
-	// read the header line
-	fields, err := reader.Read()
-	if err != nil {
-		return err
-	}
-
-	// verify the header fields are as expected
-	if len(fields) != len(headerFields) {
-		return fmt.Errorf("Wrong number of header fields; has the file format changed?")
-	}
-	for i := 0; i < len(fields); i++ {
-		if fields[i] != headerFields[i] {
-			return fmt.Errorf("Header field mismatch. Expected %s, found %s",
-				headerFields[i], fields[i])
-		}
-	}
-
-	// process one family at a time
-	var families familyList
-	reader.TrailingComma = true
-	for fields, err = reader.Read(); err == nil; fields, err = reader.Read() {
-		for i, elt := range fields {
-			elt = Spaces.ReplaceAllString(elt, " ")
-			fields[i] = strings.TrimSpace(elt)
-		}
-
-		// gather info that is the same for the entire family
-		family := new(Family)
-		family.Surname, family.Couple, family.Phone, family.Email, family.Address =
-			fields[0], fields[1], fields[2], fields[3], fields[4]
-
-		// gather the individual family members
-		var familyMembers [][]string
-		end := len(fields)
-		if !dir.FullFamily && end > 11 {
-			end = 11
-		}
-
-		for i := 5; i < end; i += 3 {
-			familyMembers = append(familyMembers, fields[i:i+3])
-		}
-
-		// prepare address
-		if dir.FamilyAddress {
-			family.Address = prepAddress(dir.AddressRegexps, family.Address)
-		} else {
-			family.Address = ""
-		}
-
-		// prepare the family phone number
-		if dir.FamilyPhone {
-			family.Phone = prepPhone(dir.PhoneRegexps, family.Phone, "")
-		} else {
-			family.Phone = ""
-		}
-
-		// prepare family email address
-		if dir.FamilyEmail {
-			family.Email = prepEmail(family.Email, "")
-		} else {
-			family.Email = ""
-		}
-
-		// gather the list of family members
-		family.HasCouple = len(familyMembers) > 1
-		for i, individual := range familyMembers {
-			person := new(Person)
-			person.Name, person.Phone, person.Email = individual[0], individual[1], individual[2]
-
-			// empty entry?
-			if person.Name == "" {
-				if i < 2 {
-					// missing an entry for a head of household
-					family.HasCouple = false
-				}
-				continue
-			}
-
-			// prepare name
-			person.Name = prepName(dir.NameRegexps, person.Name)
-
-			// only show surname if different from family name
-			if strings.HasPrefix(strings.ToLower(person.Name), strings.ToLower(family.Surname)+", ") {
-				person.Name = person.Name[len(family.Surname)+2:]
-
-				// rearrange as "first last"
-				// note: if last name has already been removed, we
-				// assume this is "bob, jr" or the like and leave it alone, hence else if
-			} else if comma := strings.Index(person.Name, ", "); comma >= 0 {
-				person.Name = person.Name[comma+2:] + " " + person.Name[:comma]
-			}
-
-			// prepare individual phone number
-			if dir.PersonalPhones {
-				person.Phone = prepPhone(dir.PhoneRegexps, person.Phone, family.Phone)
-			} else {
-				person.Phone = ""
-			}
-
-			// prepare individual email address
-			if dir.PersonalEmails {
-				person.Email = prepEmail(person.Email, family.Email)
-			} else {
-				person.Email = ""
-			}
-
-			family.People = append(family.People, person)
-		}
-
-		families = append(families, family)
-	}
-	if err != io.EOF {
-		return err
-	}
-
-	sort.Sort(families)
-
-	dir.Families = families
-	return nil
-}
-
 // space: -1 means no leading space 0 regular, 1+ penalty for line break
 func packBox(lst []*Box, elt string, space int, font *FontMetrics) (entry []*Box) {
 	var box *Box
@@ -290,8 +135,6 @@ func packBox(lst []*Box, elt string, space int, font *FontMetrics) (entry []*Box
 		prev.Penalty = space
 		return append(lst, box)
 	}
-
-	panic("Can't get here")
 }
 
 func (dir *Directory) FormatFamilies() {

@@ -257,7 +257,6 @@ func (elt *BoxSlice) Cost(a, b int, first, last bool) float64 {
 		squish := (maxwidth - width) / spacesize
 		return squish*squish*squish + penalty
 	}
-	panic("Can't get here")
 }
 
 type EntrySlice struct {

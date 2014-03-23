@@ -222,13 +222,24 @@ your ward.  Follow this link:</p>
 (opens in a new tab/window)</li></ul>
 
 <p>You will need to log in using your lds.org ID. It should take you
-to a screen with your ward directory listed. On the left side, find
-a link that says “Export Households” and click on it. It will pop up
-a box and let you download a file.  Download the file and take note
-of where it is saved (usually in you “Downloads” directory).</p>
+to a screen with your ward directory listed. Near the top-right of
+the screen will a button labeled “Print”. Click it and a box will
+pop up.  Under the “Details” section, clear the entries for “Ward
+Leadership and Meeting Info.” and “Household Photo”, and select all
+of the other entries. Set it to use a single column (under the
+“Layout” section).  Then click on the “Save PDF” button. Your
+browser will save a file called “printedDirectory.pdf” in the usual
+place (normally your “Downloads” directory), or it may let you
+choose a place. Take note of where the file was saved.</p>
+
+<p>Next, you must pre-process the PDF file using a utility called
+<tt>pdftk</tt>. Run the following command in the directory where
+“printedDirectory.pdf” is saved: “pdftk printedDirectory.pdf output
+uncompressed.pdf uncompress”.</p>
 
 <form method="post" id="submitform" action="/submit" enctype="multipart/form-data">
-<p>Next, come back here and click on this button and find the file:
+<p>Next, come back here and click on this button and find the
+“uncompressed.pdf” file:
 <input type="file" id="MembershipData" name="MembershipData"></p>
 
 <p>Finally, click on the “Generate” button here to download the

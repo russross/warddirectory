@@ -156,7 +156,7 @@ func (doc Document) Render(info, catalog PDFRef) (pdf []byte, err error) {
 	var out bytes.Buffer
 	var xref []int
 
-	fmt.Fprint(&out, "%PDF-1.4\n%«»\n")
+	fmt.Fprintf(&out, "%s", "%PDF-1.4\n%«»\n")
 	for i, elt := range doc {
 		xref = append(xref, out.Len())
 		fmt.Fprintf(&out, "%d 0 obj\n", i+1)
