@@ -24,88 +24,11 @@ type Family struct {
 	Surname   string
 	Couple    string
 	HasCouple bool
-	Address   string
+	Address   []string
 	Phone     string
 	Email     string
 	People    []*Person
 }
-
-// sortable list
-type familyList []*Family
-
-func (lst familyList) Len() int {
-	return len(lst)
-}
-
-func (lst familyList) Less(i, j int) bool {
-	if lst[i].Surname < lst[j].Surname {
-		return true
-	}
-	if lst[i].Couple < lst[i].Couple {
-		return true
-	}
-	return false
-}
-
-func (lst familyList) Swap(i, j int) {
-	lst[i], lst[j] = lst[j], lst[i]
-}
-
-func prepName(regexps []*RegularExpression, name string) string {
-	// prepare name
-	for _, re := range regexps {
-		name = re.Regexp.ReplaceAllString(strings.TrimSpace(name), re.Replacement)
-		name = Spaces.ReplaceAllString(name, " ")
-		name = strings.TrimSpace(name)
-	}
-
-	return name
-}
-
-func prepAddress(regexps []*RegularExpression, address string) string {
-	// prepare address
-	for _, re := range regexps {
-		address = re.Regexp.ReplaceAllString(strings.TrimSpace(address), re.Replacement)
-		address = Spaces.ReplaceAllString(address, " ")
-		address = strings.TrimSpace(address)
-	}
-
-	return address
-}
-
-var Phone10Digit = regexp.MustCompile(`^\D*(\d{3})\D*(\d{3})\D*(\d{4})\D*$`)
-var Phone7Digit = regexp.MustCompile(`^\D*(\d{3})\D*(\d{4})\D*$`)
-
-// prepare phone number
-func prepPhone(regexps []*RegularExpression, phone, familyPhone string) string {
-	// first extract groups of digits and put it in the form 123-456-7890
-	phone = Phone10Digit.ReplaceAllString(phone, "$1-$2-$3")
-
-	// same for 123-4567
-	phone = Phone7Digit.ReplaceAllString(phone, "$1-$2")
-
-	for _, re := range regexps {
-		phone = re.Regexp.ReplaceAllString(phone, re.Replacement)
-		phone = Spaces.ReplaceAllString(phone, " ")
-		phone = strings.TrimSpace(phone)
-	}
-
-	if phone == familyPhone {
-		phone = ""
-	}
-
-	return phone
-}
-
-func prepEmail(email, familyEmail string) string {
-	if strings.ToLower(email) == strings.ToLower(familyEmail) {
-		email = ""
-	}
-
-	return email
-}
-
-var Spaces = regexp.MustCompile(`\s+`)
 
 // space: -1 means no leading space 0 regular, 1+ penalty for line break
 func packBox(lst []*Box, elt string, space int, font *FontMetrics) (entry []*Box) {
@@ -234,13 +157,13 @@ func (dir *Directory) FormatFamilies() {
 
 		// address comes next
 		// split the address into words
-		if family.Address != "" {
+		if len(family.Address) != 0 {
 			if needcomma {
 				entry = packBox(entry, ",", -1, dir.Roman)
 				needcomma = false
 			}
 
-			words := strings.Fields(family.Address)
+			words := strings.Fields(strings.Join(family.Address, " "))
 			for i, word := range words {
 				space := 0
 

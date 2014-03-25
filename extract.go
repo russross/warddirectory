@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"io"
 	"log"
+	"regexp"
 	"sort"
 	"strings"
 	"unicode"
@@ -26,7 +27,6 @@ const (
 
 func (dir *Directory) ParseFamilies(src io.Reader) error {
 	// the result
-	var families familyList
 	var family *Family
 	var person *Person
 
@@ -89,7 +89,7 @@ func (dir *Directory) ParseFamilies(src io.Reader) error {
 		if font == largeNameFont && color == black {
 			// create a new record
 			family = new(Family)
-			families = append(families, family)
+			dir.Families = append(dir.Families, family)
 
 			family.Surname = text
 			continue
@@ -127,10 +127,7 @@ func (dir *Directory) ParseFamilies(src io.Reader) error {
 			} else if looksLikePhone(text) {
 				family.Phone = text
 			} else {
-				if family.Address != "" {
-					family.Address += " "
-				}
-				family.Address += text
+				family.Address = append(family.Address, text)
 			}
 			continue
 		}
@@ -154,13 +151,32 @@ func (dir *Directory) ParseFamilies(src io.Reader) error {
 		log.Printf("Error scanning input: %v", err)
 		return err
 	}
+	return nil
+}
 
+func looksLikeEmail(s string) bool {
+	return strings.Contains(s, "@")
+}
+
+func looksLikePhone(s string) bool {
+	digits := 0
+	for _, r := range s {
+		if unicode.IsDigit(r) {
+			digits++
+		} else if !strings.Contains(`-()\ `, string(r)) {
+			return false
+		}
+	}
+	return digits == 7 || digits == 10
+}
+
+func (dir *Directory) PrepareFamilies() error {
 	// clean up entries details
-	for _, f := range families {
+	for _, f := range dir.Families {
 		if dir.FamilyAddress {
 			f.Address = prepAddress(dir.AddressRegexps, f.Address)
 		} else {
-			f.Address = ""
+			f.Address = nil
 		}
 
 		if dir.FamilyPhone {
@@ -203,23 +219,88 @@ func (dir *Directory) ParseFamilies(src io.Reader) error {
 		}
 	}
 
-	sort.Sort(families)
-	dir.Families = families
+	sort.Sort(familyList(dir.Families))
 	return nil
 }
 
-func looksLikeEmail(s string) bool {
-	return strings.Contains(s, "@")
+func prepName(regexps []*RegularExpression, name string) string {
+	// prepare name
+	for _, re := range regexps {
+		name = re.Regexp.ReplaceAllString(strings.TrimSpace(name), re.Replacement)
+		name = Spaces.ReplaceAllString(name, " ")
+		name = strings.TrimSpace(name)
+	}
+
+	return name
 }
 
-func looksLikePhone(s string) bool {
-	digits := 0
-	for _, r := range s {
-		if unicode.IsDigit(r) {
-			digits++
-		} else if !strings.Contains(`-()\ `, string(r)) {
-			return false
+func prepAddress(regexps []*RegularExpression, address []string) []string {
+	// prepare address
+	var out []string
+	for _, line := range address {
+		for _, re := range regexps {
+			line = re.Regexp.ReplaceAllString(strings.TrimSpace(line), re.Replacement)
+			line = Spaces.ReplaceAllString(line, " ")
+			line = strings.TrimSpace(line)
+		}
+		if len(line) > 0 {
+			out = append(out, line)
 		}
 	}
-	return digits == 7 || digits == 10
+
+	return out
+}
+
+var Phone10Digit = regexp.MustCompile(`^\D*(\d{3})\D*(\d{3})\D*(\d{4})\D*$`)
+var Phone7Digit = regexp.MustCompile(`^\D*(\d{3})\D*(\d{4})\D*$`)
+var Spaces = regexp.MustCompile(`\s+`)
+
+// prepare phone number
+func prepPhone(regexps []*RegularExpression, phone, familyPhone string) string {
+	// first extract groups of digits and put it in the form 123-456-7890
+	phone = Phone10Digit.ReplaceAllString(phone, "$1-$2-$3")
+
+	// same for 123-4567
+	phone = Phone7Digit.ReplaceAllString(phone, "$1-$2")
+
+	for _, re := range regexps {
+		phone = re.Regexp.ReplaceAllString(phone, re.Replacement)
+		phone = Spaces.ReplaceAllString(phone, " ")
+		phone = strings.TrimSpace(phone)
+	}
+
+	if phone == familyPhone {
+		phone = ""
+	}
+
+	return phone
+}
+
+func prepEmail(email, familyEmail string) string {
+	if strings.ToLower(email) == strings.ToLower(familyEmail) {
+		email = ""
+	}
+
+	return email
+}
+
+// sortable list
+type familyList []*Family
+
+func (lst familyList) Len() int {
+	return len(lst)
+}
+
+func (lst familyList) Less(i, j int) bool {
+	if lst[i].Surname < lst[j].Surname {
+		return true
+	}
+	if lst[i].Couple < lst[i].Couple {
+		return true
+	}
+	return false
+}
+
+func (lst familyList) Swap(i, j int) {
+	lst[i], lst[j] = lst[j], lst[i]
 }

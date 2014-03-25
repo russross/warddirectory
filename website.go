@@ -273,6 +273,11 @@ func submit(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "parsing families: "+err.Error(), http.StatusBadRequest)
 			return
 		}
+		if err = config.PrepareFamilies(); err != nil {
+			log.Printf("Generate: preparing families: %v", err)
+			http.Error(w, "preparing families: "+err.Error(), http.StatusBadRequest)
+			return
+		}
 
 		// format families
 		config.FormatFamilies()
