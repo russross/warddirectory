@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"code.google.com/p/gorilla/schema"
 	"encoding/json"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -12,7 +11,6 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
-	"unicode/utf8"
 )
 
 var t *template.Template
@@ -239,7 +237,7 @@ func submit(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusFound)
 
 	case action == "Generate":
-		// get the uplaoded CSV data
+		// get the uplaoded PDF data
 		file, _, err := r.FormFile("MembershipData")
 		if err != nil {
 			log.Printf("Generate: getting MembershipData form field: %v", err)
@@ -253,19 +251,7 @@ func submit(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "reading uploaded file: "+err.Error(), http.StatusBadRequest)
 			return
 		}
-		var src io.Reader
-
-		// see if it is valid utf-8 input
-		if !utf8.Valid(contents) {
-			// if not, assume it is latin1/windows1252/iss8859-1 and convert it
-			runes := make([]rune, len(contents))
-			for i, ch := range contents {
-				runes[i] = rune(ch)
-			}
-			src = strings.NewReader(string(runes))
-		} else {
-			src = bytes.NewReader(contents)
-		}
+		src := bytes.NewReader(contents)
 
 		// load and parse the families
 		if err = config.ParseFamilies(src); err != nil {

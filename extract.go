@@ -2,12 +2,15 @@ package main
 
 import (
 	"bufio"
+	"compress/zlib"
 	"io"
 	"log"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 )
 
 const (
@@ -25,131 +28,158 @@ const (
 	footerFont    string = "/F2 6 Tf"
 )
 
+var startOfStream = regexp.MustCompile(`^<</Length (\d+)/Filter/FlateDecode>>stream\n`)
+
 func (dir *Directory) ParseFamilies(src io.Reader) error {
 	// the result
 	var family *Family
 	var person *Person
 
 	// use a state machine to extract families
-	instream := false
 	font, color := "", ""
-	scanner := bufio.NewScanner(src)
-	for scanner.Scan() {
-		line := scanner.Text()
-
-		// skip everything except page data
-		switch line {
-		case "stream":
-			instream = true
-			continue
-		case "endstream":
-			instream = false
-			continue
-		}
-		if !instream {
-			continue
+	reader := bufio.NewReader(src)
+	for {
+		line, err := reader.ReadString('\n')
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			log.Printf("Error reading line of input: %v", err)
+			return err
 		}
 
-		// capture font changes
-		switch line {
-		case titleFont, largeNameFont, smallNameFont, contactFont, footerFont:
-			font = line
-			continue
-		case black, dark, medium, light:
-			color = line
-			continue
-		default:
-		}
-
-		// ignore everything except text
-		if !strings.HasPrefix(line, "(") || !strings.HasSuffix(line, ")Tj") {
-			continue
-		}
-		text := strings.TrimSuffix(strings.TrimPrefix(line, "("), ")Tj")
-
-		// skip letter headers: assume no families have single letter last name
-		if len(text) == 1 && font == largeNameFont && color == black {
-			continue
-		}
-		_, _ = color, font
-
-		// skip headers and footers
-		if font == titleFont || font == footerFont {
+		// starting a new page?
+		groups := startOfStream.FindStringSubmatch(line)
+		if len(groups) == 0 {
 			continue
 		}
 
-		// trim leading \t sequences
-		for strings.HasPrefix(text, `\t`) {
-			text = strings.TrimPrefix(text, `\t`)
-			text = Spaces.ReplaceAllString(text, " ")
-			text = strings.TrimSpace(text)
+		// read and decompress the stream
+		size, err := strconv.ParseInt(groups[1], 10, 63)
+		if err != nil {
+			log.Printf("Error parsing size of stream: %v", err)
+			return err
 		}
-
-		// new family?
-		if font == largeNameFont && color == black {
-			// create a new record
-			family = new(Family)
-			dir.Families = append(dir.Families, family)
-
-			family.Surname = text
-			continue
+		compressed := &io.LimitedReader{R: reader, N: size}
+		uncompressed, err := zlib.NewReader(compressed)
+		if err != nil {
+			log.Printf("Error uncompressing stream: %v", err)
+			return err
 		}
+		scanner := bufio.NewScanner(uncompressed)
+		for scanner.Scan() {
+			line := scanner.Text()
 
-		// new adult?
-		if font == smallNameFont && color == black {
-			// create a new person
-			person = new(Person)
-			family.People = append(family.People, person)
-
-			if len(family.People) > 1 {
-				family.HasCouple = true
-				family.Couple += " & " + text
+			// do we have non-utf8 text? assume it is WinAnsiEncoding and convert
+			if !utf8.ValidString(line) {
+				runes := make([]rune, len(line))
+				for i := 0; i < len(line); i++ {
+					runes[i] = rune(line[i])
+				}
+				line = string(runes)
 			}
-			person.Name = text
-			continue
-		}
 
-		// new child?
-		if font == smallNameFont && color == medium {
-			// create a new person
-			person = new(Person)
-			family.People = append(family.People, person)
-
-			person.Name = text
-			continue
-		}
-
-		// contact details for family?
-		if font == contactFont && len(family.People) == 0 {
-			if looksLikeEmail(text) {
-				// looks like an email address
-				family.Email = text
-			} else if looksLikePhone(text) {
-				family.Phone = text
-			} else {
-				family.Address = append(family.Address, text)
+			// capture font changes
+			switch line {
+			case titleFont, largeNameFont, smallNameFont, contactFont, footerFont:
+				font = line
+				continue
+			case black, dark, medium, light:
+				color = line
+				continue
+			default:
 			}
-			continue
-		}
 
-		// contact details for individual?
-		if font == contactFont {
-			if looksLikeEmail(text) {
-				// looks like an email address
-				person.Email = text
-			} else if looksLikePhone(text) {
-				person.Phone = text
-			} else {
-				log.Printf("Warning: contact for person not recognized: [%s]", text)
+			// ignore everything except text
+			if !strings.HasPrefix(line, "(") || !strings.HasSuffix(line, ")Tj") {
+				continue
 			}
-			continue
-		}
+			text := strings.TrimSuffix(strings.TrimPrefix(line, "("), ")Tj")
 
-		log.Printf("Warning: unknown text: [%s]", text)
-	}
-	if err := scanner.Err(); err != nil {
-		log.Printf("Error scanning input: %v", err)
-		return err
+			// skip letter headers: assume no families have single letter last name
+			if len(text) == 1 && font == largeNameFont && color == black {
+				continue
+			}
+			_, _ = color, font
+
+			// skip headers and footers
+			if font == titleFont || font == footerFont {
+				continue
+			}
+
+			// trim leading \t sequences
+			for strings.HasPrefix(text, `\t`) {
+				text = strings.TrimPrefix(text, `\t`)
+				text = Spaces.ReplaceAllString(text, " ")
+				text = strings.TrimSpace(text)
+			}
+
+			// new family?
+			if font == largeNameFont && color == black {
+				// create a new record
+				family = new(Family)
+				dir.Families = append(dir.Families, family)
+
+				family.Surname = text
+				continue
+			}
+
+			// new adult?
+			if font == smallNameFont && color == black {
+				// create a new person
+				person = new(Person)
+				family.People = append(family.People, person)
+
+				if len(family.People) > 1 {
+					family.HasCouple = true
+					family.Couple += " & " + text
+				}
+				person.Name = text
+				continue
+			}
+
+			// new child?
+			if font == smallNameFont && color == medium {
+				// create a new person
+				person = new(Person)
+				family.People = append(family.People, person)
+
+				person.Name = text
+				continue
+			}
+
+			// contact details for family?
+			if font == contactFont && len(family.People) == 0 {
+				if looksLikeEmail(text) {
+					// looks like an email address
+					family.Email = text
+				} else if looksLikePhone(text) {
+					family.Phone = text
+				} else {
+					family.Address = append(family.Address, text)
+				}
+				continue
+			}
+
+			// contact details for individual?
+			if font == contactFont {
+				if looksLikeEmail(text) {
+					// looks like an email address
+					person.Email = text
+				} else if looksLikePhone(text) {
+					person.Phone = text
+				} else {
+					log.Printf("Warning: contact for person not recognized: [%s]", text)
+				}
+				continue
+			}
+
+			log.Printf("Warning: unknown text: [%s]", text)
+		}
+		if err := scanner.Err(); err != nil {
+			log.Printf("Error scanning input: %v", err)
+			return err
+		}
+		uncompressed.Close()
 	}
 	return nil
 }
