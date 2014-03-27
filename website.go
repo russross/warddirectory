@@ -259,6 +259,11 @@ func submit(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "parsing families: "+err.Error(), http.StatusBadRequest)
 			return
 		}
+		if err = config.CleanupAddresses(); err != nil {
+			log.Printf("Generate: cleaning up addresses: %v", err)
+			http.Error(w, "cleaning up addresses: "+err.Error(), http.StatusBadRequest)
+			return
+		}
 		if err = config.PrepareFamilies(); err != nil {
 			log.Printf("Generate: preparing families: %v", err)
 			http.Error(w, "preparing families: "+err.Error(), http.StatusBadRequest)

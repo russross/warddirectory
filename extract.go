@@ -9,7 +9,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"unicode"
 	"unicode/utf8"
 )
 
@@ -189,15 +188,7 @@ func looksLikeEmail(s string) bool {
 }
 
 func looksLikePhone(s string) bool {
-	digits := 0
-	for _, r := range s {
-		if unicode.IsDigit(r) {
-			digits++
-		} else if !strings.Contains(`-()\ `, string(r)) {
-			return false
-		}
-	}
-	return digits == 7 || digits == 10
+	return Phone7Digit.MatchString(s) || Phone10Digit.MatchString(s)
 }
 
 func (dir *Directory) PrepareFamilies() error {
