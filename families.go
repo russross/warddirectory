@@ -163,7 +163,7 @@ func (dir *Directory) FormatFamilies() {
 				needcomma = false
 			}
 
-			words := strings.Fields(strings.Join(family.Address, " "))
+			words := strings.Fields(strings.Join(family.Address, ", "))
 			for i, word := range words {
 				space := 0
 
@@ -198,7 +198,7 @@ func (dir *Directory) CompileRegexps() {
 			if strings.TrimSpace(elt.Expression) != "" {
 				*kind = append(*kind, elt)
 			}
-			if elt.Regexp, err = regexp.Compile("(?i:" + elt.Expression + ")"); err != nil {
+			if elt.Regexp, err = regexp.Compile("(?mi:" + elt.Expression + ")"); err != nil {
 				elt.Regexp = FallbackRegexp
 				elt.Expression = "!!Error!! " + elt.Expression
 			}

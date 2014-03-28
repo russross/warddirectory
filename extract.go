@@ -272,8 +272,8 @@ func prepAddress(regexps []*RegularExpression, address []string) []string {
 	return out
 }
 
-var Phone10Digit = regexp.MustCompile(`^\D*(\d{3})\D*(\d{3})\D*(\d{4})\D*$`)
-var Phone7Digit = regexp.MustCompile(`^\D*(\d{3})\D*(\d{4})\D*$`)
+var Phone10Digit = regexp.MustCompile(`^\D*(\d{3})[^a-zA-Z0-9]*(\d{3})[^a-zA-Z0-9]*(\d{4})\D*$`)
+var Phone7Digit = regexp.MustCompile(`^\D*(\d{3})[^a-zA-Z0-9]*(\d{4})\D*$`)
 var Spaces = regexp.MustCompile(`\s+`)
 
 // prepare phone number

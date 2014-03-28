@@ -78,7 +78,8 @@
     margin-top: 2em;
   }
 </style>
-<script type="text/javascript" src="/jquery.js"></script>
+<script type="text/javascript" src="/jquery.min.js"></script>
+<script type="text/javascript" src="/jquery-ui.min.js"></script>
 <script type="text/javascript">
 jQuery(function ($) {
     // clicking on a section label hides/shows it
@@ -109,7 +110,7 @@ jQuery(function ($) {
     $('#generatebutton').click(function() {
         // make sure they selected a file before trying to upload
         if ($('#MembershipData').val() == '') {
-            alert('Please select a .csv file before clicking the “Generate” button');
+            alert('Please select a “printedDirectory.pdf” file before clicking the “Generate” button');
             return false;
         }
     });
@@ -132,8 +133,8 @@ jQuery(function ($) {
     });
 
     // save in the background any time anything is updated
-    $('.save').live('change', function () {
-        // submit using ajax to avoid reseting the csv file field
+    $('body').on('.save', 'change', function() {
+        // submit using ajax to avoid reseting the input file field
         var data = $('#submitform').serialize();
         data['SubmitButton'] = 'Save';
         $.ajax({

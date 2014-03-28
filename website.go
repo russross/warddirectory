@@ -315,9 +315,14 @@ func submit(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func js(w http.ResponseWriter, r *http.Request) {
+func jq(w http.ResponseWriter, r *http.Request) {
 	w.Header()["Content-Type"] = []string{"application/javascript"}
-	w.Write(dataFiles["jquery.js"])
+	w.Write(dataFiles["jquery.min.js"])
+}
+
+func jqui(w http.ResponseWriter, r *http.Request) {
+	w.Header()["Content-Type"] = []string{"application/javascript"}
+	w.Write(dataFiles["jquery-ui.min.js"])
 }
 
 func ico(w http.ResponseWriter, r *http.Request) {
@@ -346,7 +351,8 @@ func main() {
 
 	http.HandleFunc("/", index)
 	http.HandleFunc("/submit", submit)
-	http.HandleFunc("/jquery.js", js)
+	http.HandleFunc("/jquery.min.js", jq)
+	http.HandleFunc("/jquery-ui.min.js", jqui)
 	http.HandleFunc("/favicon.ico", ico)
 
 	log.Print("Ward Directory Generator")
