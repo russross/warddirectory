@@ -128,6 +128,9 @@ func (dir *Directory) ParseFamilies(src io.Reader) error {
 				person = new(Person)
 				family.People = append(family.People, person)
 
+				if len(family.People) == 1 {
+					family.Couple = text
+				}
 				if len(family.People) > 1 {
 					family.HasCouple = true
 					family.Couple += " & " + text

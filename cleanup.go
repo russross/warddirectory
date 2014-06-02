@@ -73,12 +73,15 @@ func (dir *Directory) CleanupAddresses() error {
 		}
 	}
 
+	// report corrections that should be made to records
+	reportCorrections(dir.Families, cache)
+
 	// now substitute in the corrected addresses
 	for _, f := range dir.Families {
 		address := strings.Join(f.Address, "\n")
 		elt, present := cache[address]
 		if !present {
-			log.Printf("Address not found in cache, leaving unchanged: %q", address)
+			//log.Printf("Address not found in cache, leaving unchanged: %q", address)
 			continue
 		}
 		f.Address = strings.Split(elt.PrintVer, "\n")
@@ -136,7 +139,7 @@ func (c *SmartyStreet) lookupAddresses(cache map[string]*AddressRecord, addresse
 		Path:     c.Path,
 		RawQuery: v.Encode(),
 	}
-	log.Printf("Query URL: %s", url.String())
+	//log.Printf("Query URL: %s", url.String())
 
 	// form a list of requests
 	for i, elt := range addresses {
@@ -282,6 +285,7 @@ func writeAddressCache(path string, cache map[string]*AddressRecord) error {
 	for _, elt := range cache {
 		if !elt.used {
 			log.Printf("Unused   : %s", elt.Original)
+			//continue
 		}
 		list = append(list, elt)
 	}
@@ -306,7 +310,7 @@ func formAddressRequest(addr string) *AddressRequest {
 	lines := strings.Split(addr, "\n")
 	result := &AddressRequest{}
 	if len(lines) < 2 {
-		log.Printf("Address needs at least 2 lines, skipping: %q", addr)
+		//log.Printf("Address needs at least 2 lines, skipping: %q", addr)
 		return nil
 	}
 
@@ -345,4 +349,65 @@ func formAddressRequest(addr string) *AddressRequest {
 
 	log.Printf("Unknown address format, skipping: %q", addr)
 	return nil
+}
+
+func reportCorrections(families []*Family, cache map[string]*AddressRecord) {
+	//var cityFrom = regexp.MustCompile(`^S(ain)?t\.? George, UT 84770-(59|60|61|62)(\d\d)$`)
+	//var cityTo = `Diamond Valley, Utah 84770-$2$3`
+	var cityFrom2 = regexp.MustCompile(`, UT\b`)
+	var cityTo2 = `, Utah`
+	var phoneTemplate = regexp.MustCompile(`^\d{3}-\d{3}-\d{4}$`)
+	for _, f := range families {
+		report := new(bytes.Buffer)
+
+		// check for phone number corrections
+		if f.Phone != "" {
+			phone := Phone10Digit.ReplaceAllString(f.Phone, "$1-$2-$3")
+			phone = Phone7Digit.ReplaceAllString(phone, "435-$1-$2")
+			if !phoneTemplate.MatchString(f.Phone) {
+				if phoneTemplate.MatchString(phone) {
+					fmt.Fprintf(report, "\tphone correction: %s to %s\n", f.Phone, phone)
+				} else {
+					fmt.Fprintf(report, "\tphone correction: %s is malformed\n", f.Phone)
+				}
+			}
+		}
+
+		// check for individual phone number corrections
+		for _, person := range f.People {
+			if person.Phone != "" {
+				phone := Phone10Digit.ReplaceAllString(person.Phone, "$1-$2-$3")
+				phone = Phone7Digit.ReplaceAllString(phone, "435-$1-$2")
+				if !phoneTemplate.MatchString(person.Phone) {
+					if phoneTemplate.MatchString(phone) {
+						fmt.Fprintf(report, "\tphone correction for %s: %s to %s\n", person.Name, person.Phone, phone)
+					} else {
+						fmt.Fprintf(report, "\tphone correction for %s: %s is malformed\n", person.Name, person.Phone)
+					}
+				}
+			}
+		}
+
+		// check for address corrections
+		addr := strings.Join(f.Address, "\n")
+		record, present := cache[addr]
+		if present {
+			original := strings.Split(record.Original, "\n")
+			official := strings.Split(record.Official, "\n")
+			for i := 0; i < len(official); i++ {
+				//official[i] = cityFrom.ReplaceAllString(official[i], cityTo)
+				official[i] = cityFrom2.ReplaceAllString(official[i], cityTo2)
+			}
+			if record.Original != strings.Join(official, "\n") && record.Original != record.PrintVer {
+				fmt.Fprintf(report, "\taddress correction:\n")
+				fmt.Fprintf(report, "\tcurrent:\n\t\t%s\n", strings.Join(original, "\n\t\t"))
+				fmt.Fprintf(report, "\tofficial:\n\t\t%s\n", strings.Join(official, "\n\t\t"))
+			}
+		} else {
+			fmt.Fprintf(report, "\taddress is missing or incomplete:\n\t\t%s\n", strings.Join(f.Address, "\n\t\t"))
+		}
+		if report.Len() > 0 {
+			fmt.Printf("%s (%s)\n%s", f.Surname, f.Couple, report.String())
+		}
+	}
 }
