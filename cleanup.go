@@ -76,6 +76,20 @@ func (dir *Directory) CleanupAddresses() error {
 	// report corrections that should be made to records
 	reportCorrections(dir.Families, cache)
 
+	// remove middle names
+	for _, f := range dir.Families {
+		for _, p := range f.People {
+			var out []string
+			lastfirst := strings.Split(p.Name, ", ")
+			if len(lastfirst) > 1 {
+				out = append(out, lastfirst[0]+",")
+			}
+			in := strings.Fields(lastfirst[len(lastfirst)-1])
+			out = append(out, in[0])
+			p.Name = strings.Join(out, " ")
+		}
+	}
+
 	// now substitute in the corrected addresses
 	for _, f := range dir.Families {
 		address := strings.Join(f.Address, "\n")
@@ -352,10 +366,8 @@ func formAddressRequest(addr string) *AddressRequest {
 }
 
 func reportCorrections(families []*Family, cache map[string]*AddressRecord) {
-	//var cityFrom = regexp.MustCompile(`^S(ain)?t\.? George, UT 84770-(59|60|61|62)(\d\d)$`)
-	//var cityTo = `Diamond Valley, Utah 84770-$2$3`
-	var cityFrom2 = regexp.MustCompile(`, UT\b`)
-	var cityTo2 = `, Utah`
+	var cityFrom = regexp.MustCompile(`, UT\b`)
+	var cityTo = `, Utah`
 	var phoneTemplate = regexp.MustCompile(`^\d{3}-\d{3}-\d{4}$`)
 	for _, f := range families {
 		report := new(bytes.Buffer)
@@ -375,6 +387,11 @@ func reportCorrections(families []*Family, cache map[string]*AddressRecord) {
 
 		// check for individual phone number corrections
 		for _, person := range f.People {
+			lastfirst := strings.Split(person.Name, ", ")
+			first := lastfirst[len(lastfirst)-1]
+			if len(strings.Fields(first)) > 1 {
+				fmt.Fprintf(report, "\tmiddle name is included in preferred name: %s\n", person.Name)
+			}
 			if person.Phone != "" {
 				phone := Phone10Digit.ReplaceAllString(person.Phone, "$1-$2-$3")
 				phone = Phone7Digit.ReplaceAllString(phone, "435-$1-$2")
@@ -394,11 +411,16 @@ func reportCorrections(families []*Family, cache map[string]*AddressRecord) {
 		if present {
 			original := strings.Split(record.Original, "\n")
 			official := strings.Split(record.Official, "\n")
+			printver := strings.Split(record.PrintVer, "\n")
 			for i := 0; i < len(official); i++ {
-				//official[i] = cityFrom.ReplaceAllString(official[i], cityTo)
-				official[i] = cityFrom2.ReplaceAllString(official[i], cityTo2)
+				original[i] = cityFrom.ReplaceAllString(original[i], cityTo)
+				official[i] = cityFrom.ReplaceAllString(official[i], cityTo)
+				printver[i] = cityFrom.ReplaceAllString(printver[i], cityTo)
 			}
-			if record.Original != strings.Join(official, "\n") && record.Original != record.PrintVer {
+			originals := strings.Join(original, "\n")
+			officials := strings.Join(official, "\n")
+			printvers := strings.Join(printver, "\n")
+			if originals != officials || originals != printvers {
 				fmt.Fprintf(report, "\taddress correction:\n")
 				fmt.Fprintf(report, "\tcurrent:\n\t\t%s\n", strings.Join(original, "\n\t\t"))
 				fmt.Fprintf(report, "\tofficial:\n\t\t%s\n", strings.Join(official, "\n\t\t"))
